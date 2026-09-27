@@ -109,6 +109,11 @@ namespace
         const int32 NumSamples = FMath::Max(1, FMath::CeilToInt(Result.Duration * static_cast<float>(SampleRate)));
         Result.Samples.Init(0, NumSamples);
 
+        // Two simple noise integrators give the procedural placeholders low/mid-frequency
+        // energy without the obvious "sine beep" character of the first prototype.
+        float LowNoise = 0.f;
+        float MidNoise = 0.f;
+
         for (int32 Index = 0; Index < NumSamples; ++Index)
         {
             const float T = static_cast<float>(Index) / static_cast<float>(SampleRate);
@@ -119,15 +124,22 @@ namespace
             case EURFPSAudioEvent::RifleShot:
             case EURFPSAudioEvent::EnemyRifleShot:
             {
-                const float Crack = NoiseSample() * FMath::Exp(-T * 95.f) * 1.25f;
-                const float Body = FMath::Sin(TwoPi * 112.f * T) * FMath::Exp(-T * 18.f) * 0.62f;
-                const float Mechanical = FMath::Sin(TwoPi * (850.f - FMath::Min(T * 1250.f, 520.f)) * T)
-                    * FMath::Exp(-T * 31.f) * 0.24f;
-                const float Tail = NoiseSample() * FMath::Exp(-T * 10.5f) * 0.18f;
-                Value = Crack + Body + Mechanical + Tail;
+                const float RawNoise = NoiseSample();
+                LowNoise = FMath::Lerp(LowNoise, RawNoise, 0.022f);
+                MidNoise = FMath::Lerp(MidNoise, RawNoise, 0.16f);
+
+                const float MuzzleBlast = RawNoise * FMath::Exp(-T * 118.f) * 1.34f;
+                const float Pressure = (MidNoise * 0.82f + LowNoise * 1.18f) * FMath::Exp(-T * 15.5f);
+                const float LowBody = (LowNoise * 1.32f + FMath::Sin(TwoPi * 67.f * T) * 0.18f)
+                    * FMath::Exp(-T * 7.4f);
+                const float ActionEnvelope = FMath::Exp(-FMath::Square((T - 0.020f) / 0.0085f));
+                const float Mechanical = NoiseSample() * ActionEnvelope * 0.23f;
+                const float ShortTail = MidNoise * FMath::Exp(-T * 8.8f) * 0.20f;
+
+                Value = MuzzleBlast + Pressure * 0.78f + LowBody * 0.46f + Mechanical + ShortTail;
                 if (Event == EURFPSAudioEvent::EnemyRifleShot)
                 {
-                    Value *= 0.88f;
+                    Value *= 0.86f;
                 }
                 break;
             }
@@ -136,11 +148,13 @@ namespace
                 const float LocalT = FMath::Max(0.f, T - 0.026f);
                 if (T >= 0.026f)
                 {
-                    const float Early = NoiseSample() * FMath::Exp(-LocalT * 12.0f) * 0.34f;
-                    const float Room = (FMath::Sin(TwoPi * 92.f * LocalT) + FMath::Sin(TwoPi * 137.f * LocalT) * 0.72f)
-                        * FMath::Exp(-LocalT * 6.4f) * 0.22f;
-                    const float Tail = NoiseSample() * FMath::Exp(-LocalT * 5.2f) * 0.17f;
-                    Value = Early + Room + Tail;
+                    const float RawNoise = NoiseSample();
+                    LowNoise = FMath::Lerp(LowNoise, RawNoise, 0.018f);
+                    MidNoise = FMath::Lerp(MidNoise, RawNoise, 0.10f);
+                    const float Early = MidNoise * FMath::Exp(-LocalT * 11.0f) * 0.48f;
+                    const float Room = LowNoise * FMath::Exp(-LocalT * 5.8f) * 0.42f;
+                    const float Slap = NoiseSample() * FMath::Exp(-FMath::Square((LocalT - 0.055f) / 0.026f)) * 0.17f;
+                    Value = Early + Room + Slap;
                 }
                 break;
             }
@@ -149,10 +163,13 @@ namespace
                 const float LocalT = FMath::Max(0.f, T - 0.065f);
                 if (T >= 0.065f)
                 {
-                    const float Echo = NoiseSample() * FMath::Exp(-LocalT * 5.0f) * 0.13f;
-                    const float Low = FMath::Sin(TwoPi * 74.f * LocalT) * FMath::Exp(-LocalT * 3.7f) * 0.13f;
-                    const float Distant = FMath::Sin(TwoPi * 118.f * LocalT) * FMath::Exp(-LocalT * 4.6f) * 0.08f;
-                    Value = Echo + Low + Distant;
+                    const float RawNoise = NoiseSample();
+                    LowNoise = FMath::Lerp(LowNoise, RawNoise, 0.014f);
+                    MidNoise = FMath::Lerp(MidNoise, RawNoise, 0.075f);
+                    const float DistantPressure = LowNoise * FMath::Exp(-LocalT * 3.6f) * 0.34f;
+                    const float TerrainReturn = MidNoise * FMath::Exp(-LocalT * 4.7f) * 0.19f;
+                    const float LateEcho = NoiseSample() * FMath::Exp(-FMath::Square((LocalT - 0.18f) / 0.055f)) * 0.08f;
+                    Value = DistantPressure + TerrainReturn + LateEcho;
                 }
                 break;
             }
@@ -165,30 +182,42 @@ namespace
             }
             case EURFPSAudioEvent::GrenadeExplosion:
             {
-                const float Initial = NoiseSample() * FMath::Exp(-T * 28.f) * 1.15f;
-                const float Boom = FMath::Sin(TwoPi * (62.f - T * 18.f) * T) * FMath::Exp(-T * 4.8f) * 0.95f;
-                const float Rumble = NoiseSample() * FMath::Exp(-T * 4.1f) * 0.26f;
-                Value = Initial + Boom + Rumble;
+                const float RawNoise = NoiseSample();
+                LowNoise = FMath::Lerp(LowNoise, RawNoise, 0.012f);
+                MidNoise = FMath::Lerp(MidNoise, RawNoise, 0.09f);
+                const float Initial = RawNoise * FMath::Exp(-T * 34.f) * 1.30f;
+                const float Pressure = (LowNoise * 1.45f + MidNoise * 0.52f) * FMath::Exp(-T * 4.4f);
+                const float GroundRumble = LowNoise * FMath::Exp(-T * 2.9f) * 0.48f;
+                Value = Initial + Pressure + GroundRumble;
                 break;
             }
             case EURFPSAudioEvent::FootstepConcrete:
             {
-                Value = FMath::Sin(TwoPi * 78.f * T) * FMath::Exp(-T * 29.f) * 0.68f
-                    + NoiseSample() * FMath::Exp(-T * 37.f) * 0.34f;
+                const float RawNoise = NoiseSample();
+                LowNoise = FMath::Lerp(LowNoise, RawNoise, 0.045f);
+                MidNoise = FMath::Lerp(MidNoise, RawNoise, 0.22f);
+                const float Heel = FMath::Exp(-FMath::Square((T - 0.018f) / 0.010f));
+                const float Sole = FMath::Exp(-FMath::Square((T - 0.062f) / 0.020f));
+                Value = RawNoise * Heel * 0.42f + MidNoise * Sole * 0.34f + LowNoise * FMath::Exp(-T * 23.f) * 0.28f;
                 break;
             }
             case EURFPSAudioEvent::FootstepMetal:
             {
-                Value = FMath::Sin(TwoPi * 165.f * T) * FMath::Exp(-T * 22.f) * 0.42f
-                    + FMath::Sin(TwoPi * 760.f * T) * FMath::Exp(-T * 29.f) * 0.25f
-                    + NoiseSample() * FMath::Exp(-T * 44.f) * 0.23f;
+                const float RawNoise = NoiseSample();
+                LowNoise = FMath::Lerp(LowNoise, RawNoise, 0.035f);
+                const float Contact = FMath::Exp(-FMath::Square((T - 0.020f) / 0.009f));
+                const float Ring = FMath::Sin(TwoPi * 1320.f * T) * FMath::Exp(-T * 32.f) * 0.16f;
+                Value = RawNoise * Contact * 0.46f + Ring + LowNoise * FMath::Exp(-T * 20.f) * 0.22f;
                 break;
             }
             case EURFPSAudioEvent::FootstepWood:
             {
-                Value = FMath::Sin(TwoPi * 94.f * T) * FMath::Exp(-T * 25.f) * 0.58f
-                    + FMath::Sin(TwoPi * 285.f * T) * FMath::Exp(-T * 38.f) * 0.18f
-                    + NoiseSample() * FMath::Exp(-T * 42.f) * 0.18f;
+                const float RawNoise = NoiseSample();
+                LowNoise = FMath::Lerp(LowNoise, RawNoise, 0.055f);
+                MidNoise = FMath::Lerp(MidNoise, RawNoise, 0.18f);
+                const float Contact = FMath::Exp(-FMath::Square((T - 0.022f) / 0.012f));
+                const float Board = FMath::Exp(-FMath::Square((T - 0.074f) / 0.026f));
+                Value = RawNoise * Contact * 0.34f + MidNoise * Board * 0.27f + LowNoise * FMath::Exp(-T * 18.f) * 0.33f;
                 break;
             }
             case EURFPSAudioEvent::ImpactMetal:
@@ -247,13 +276,15 @@ namespace
             case EURFPSAudioEvent::DoorOpen:
             case EURFPSAudioEvent::DoorClose:
             {
-                const float DirectionScale = Event == EURFPSAudioEvent::DoorClose ? 1.15f : 0.88f;
-                const float Creak = FMath::Sin(TwoPi * (118.f + 38.f * FMath::Sin(T * 12.f)) * T)
-                    * FMath::Exp(-T * 5.8f) * 0.34f;
-                const float Scrape = NoiseSample() * FMath::Exp(-T * 6.5f) * 0.14f;
-                const float Latch = FMath::Exp(-FMath::Square((T - (Event == EURFPSAudioEvent::DoorClose ? 0.28f : 0.07f)) / 0.018f))
-                    * NoiseSample() * 0.58f;
-                Value = (Creak + Scrape + Latch) * DirectionScale;
+                const float DirectionScale = Event == EURFPSAudioEvent::DoorClose ? 1.12f : 0.90f;
+                const float RawNoise = NoiseSample();
+                LowNoise = FMath::Lerp(LowNoise, RawNoise, 0.030f);
+                MidNoise = FMath::Lerp(MidNoise, RawNoise, 0.12f);
+                const float HingeFriction = (MidNoise * 0.30f + LowNoise * 0.35f) * FMath::Exp(-T * 4.8f);
+                const float Handle = FMath::Exp(-FMath::Square((T - 0.045f) / 0.014f)) * NoiseSample() * 0.28f;
+                const float LatchTime = Event == EURFPSAudioEvent::DoorClose ? 0.285f : 0.105f;
+                const float Latch = FMath::Exp(-FMath::Square((T - LatchTime) / 0.014f)) * NoiseSample() * 0.62f;
+                Value = (HingeFriction + Handle + Latch) * DirectionScale;
                 break;
             }
             default:
@@ -267,13 +298,14 @@ namespace
     }
 
 
-    const FGeneratedSound& GetGeneratedTemplate(EURFPSAudioEvent Event)
+    const FGeneratedSound& GetGeneratedTemplate(EURFPSAudioEvent Event, int32 Variant)
     {
-        // Runtime procedural audio is intentionally cached by event. Re-synthesizing tens of
-        // thousands of PCM samples for every automatic-rifle shot is unnecessary work; pitch
-        // variation at playback keeps repetition from sounding completely identical.
-        static TMap<uint8, FGeneratedSound> Cache;
-        const uint8 Key = static_cast<uint8>(Event);
+        // Cache a small variation bank per event. Automatic fire no longer replays one identical
+        // PCM buffer every shot, while avoiding expensive procedural synthesis during combat.
+        static TMap<uint16, FGeneratedSound> Cache;
+        const uint16 EventKey = static_cast<uint16>(static_cast<uint8>(Event));
+        const uint16 VariantKey = static_cast<uint16>(FMath::Clamp(Variant, 0, 3));
+        const uint16 Key = static_cast<uint16>(EventKey * 4u + VariantKey);
         if (FGeneratedSound* Found = Cache.Find(Key))
         {
             return *Found;
@@ -312,9 +344,9 @@ namespace
         Settings.FalloffDistance = FMath::Max(100.f, Generated.MaxDistance - Generated.InnerRadius);
         Settings.bEnableOcclusion = Generated.bOcclusion;
         Settings.OcclusionTraceChannel = ECC_Visibility;
-        Settings.OcclusionLowPassFilterFrequency = 1650.f;
-        Settings.OcclusionVolumeAttenuation = 0.36f;
-        Settings.OcclusionInterpolationTime = 0.08f;
+        Settings.OcclusionLowPassFilterFrequency = 2100.f;
+        Settings.OcclusionVolumeAttenuation = 0.44f;
+        Settings.OcclusionInterpolationTime = 0.11f;
         Settings.bAttenuateWithLPF = true;
         Settings.LPFRadiusMin = Generated.InnerRadius * 2.0f;
         Settings.LPFRadiusMax = Generated.MaxDistance;
@@ -328,7 +360,7 @@ void URFPSAudio::PlaySpatial(UObject* WorldContextObject, EURFPSAudioEvent Event
 {
     if (!WorldContextObject) return;
 
-    const FGeneratedSound& Generated = GetGeneratedTemplate(Event);
+    const FGeneratedSound& Generated = GetGeneratedTemplate(Event, FMath::RandRange(0, 3));
     USoundWaveProcedural* Wave = BuildWave(WorldContextObject, Generated);
     if (!Wave) return;
 
@@ -391,7 +423,7 @@ void URFPSAudio::PlayLocal(UObject* WorldContextObject, EURFPSAudioEvent Event,
     float VolumeMultiplier, float PitchMultiplier)
 {
     if (!WorldContextObject) return;
-    const FGeneratedSound& Generated = GetGeneratedTemplate(Event);
+    const FGeneratedSound& Generated = GetGeneratedTemplate(Event, FMath::RandRange(0, 3));
     USoundWaveProcedural* Wave = BuildWave(WorldContextObject, Generated);
     if (!Wave) return;
 

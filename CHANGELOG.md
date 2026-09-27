@@ -1,5 +1,28 @@
 # UltraRealFPS — Changelog
 
+## Presentation Realism Pass — en test
+
+### Viewmodel / sensation d'arme
+- inertie du viewmodel liée aux changements de vitesse et aux mouvements de souris ;
+- sway de marche retravaillé et respiration idle plus discrète ;
+- animation de rechargement enrichie sans modifier la logique de munitions ;
+- silhouette du fusil placeholder détaillée (upper receiver, front sight, trigger guard, foregrip) ;
+- séparation visuelle corps / pièces métalliques / lentille d'optique.
+
+### Audio placeholder
+- banque de 4 variantes PCM par événement au lieu d'une seule forme d'onde répétée ;
+- tir, réverbération intérieure/extérieure, grenade, pas et portes moins tonals ;
+- davantage de bruit filtré/pression transitoire pour réduire le rendu "jouet" ;
+- occlusion légèrement rééquilibrée pour conserver plus d'information directionnelle derrière un obstacle.
+
+### Correctif gameplay
+- lorsqu'un casque ennemi est détruit, sa collision Visibility est maintenant désactivée avec le mesh : il ne peut plus devenir une géométrie balistique invisible.
+
+### Validation
+- branche GitHub : `dev/presentation-realism-pass` ;
+- compilation UE 5.8 encore à valider sur le PC de test avant merge vers `main`.
+
+
 ## Acoustic & CQB Interaction Update
 
 ### Audio / immersion

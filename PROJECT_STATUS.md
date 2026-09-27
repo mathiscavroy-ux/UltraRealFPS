@@ -18,9 +18,10 @@
 - grenades physiques ;
 - IA par rôles, suppression, perception, fire slots, cover bias, vagues ;
 - supplies et contrôle de vague ;
-- audio spatial procédural, occlusion, pas par surface, near-miss ;
+- audio spatial procédural, occlusion, pas par surface, near-miss, banque de variations ;
 - portes interactives et zones CQB ;
-- HUD tactique minimal.
+- HUD tactique minimal ;
+- viewmodel procédural avec inertie, sway, obstruction et reload visuel.
 
 ## Architecture
 - `URFPSCharacter` — joueur, arme, santé, interaction.
@@ -42,10 +43,10 @@
 5. Le multijoueur n'est pas prévu dans les systèmes actuels ; ne pas l'ajouter avant stabilisation du solo.
 
 ## Priorités recommandées après cette update
-1. Stabiliser compilation + QA acoustique/CQB.
-2. Mettre la baseline complète sur GitHub.
-3. Construire le pipeline de vrais assets (Git LFS + imports reproductibles).
-4. Remplacer l'arme placeholder par un vrai viewmodel + animations.
+1. Valider la branche `dev/presentation-realism-pass` sous UE 5.8 puis merger si stable.
+2. Construire le pipeline de vrais assets audio/armes (Git LFS + imports reproductibles).
+3. Remplacer progressivement l'audio procédural par des enregistrements/MetaSounds sans changer les appels gameplay.
+4. Remplacer l'arme placeholder par un vrai viewmodel squelettique + animations.
 5. Remplacer les ennemis primitives par personnages squelettiques.
 6. Passer l'IA vers NavMesh + perception/BT lorsque la géométrie finale commence à exister.
 7. Créer une vraie première mission au lieu d'empiler indéfiniment des vagues de test.

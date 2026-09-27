@@ -823,7 +823,9 @@ float AURFPSEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
         HelmetDurability = FMath::Max(0.f, HelmetDurability - ArmorAbsorbed * 1.45f);
         if (HelmetDurability <= 0.1f && HelmetMesh)
         {
+            // A destroyed helmet must stop behaving like invisible ballistic geometry.
             HelmetMesh->SetVisibility(false);
+            HelmetMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         }
     }
     else if (bTorsoHit && VestDurability > 0.f && RawApplied > 0.f)
