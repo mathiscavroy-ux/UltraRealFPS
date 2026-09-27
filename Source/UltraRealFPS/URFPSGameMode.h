@@ -62,6 +62,10 @@ private:
         EBlockStyle Style = EBlockStyle::Accent);
     void SpawnCylinder(const FVector& Location, const FVector& Scale, const FRotator& Rotation = FRotator::ZeroRotator,
         EBlockStyle Style = EBlockStyle::Cover);
+    void SpawnDetailBlock(const FVector& Location, const FVector& Scale, const FRotator& Rotation = FRotator::ZeroRotator,
+        EBlockStyle Style = EBlockStyle::Dark, bool bCastShadow = false);
+    void SpawnDetailCylinder(const FVector& Location, const FVector& Scale, const FRotator& Rotation = FRotator::ZeroRotator,
+        EBlockStyle Style = EBlockStyle::Metal, bool bCastShadow = false);
     AURFPSDoor* SpawnDoor(const FVector& Location, const FRotator& Rotation = FRotator::ZeroRotator);
     UMaterialInterface* GetMaterialForStyle(EBlockStyle Style) const;
     UPhysicalMaterial* GetPhysicalMaterialForStyle(EBlockStyle Style) const;
