@@ -5,6 +5,7 @@ set "PROJECT=%~dp0UltraRealFPS.uproject"
 set "EDITOR=%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe"
 set "ART_SOURCE=%~dp0ArtSource\Industrial\SM_Container20_A.glb"
 set "ART_SENTINEL=%~dp0Content\Environment\Industrial\SM_Container20_A.uasset"
+set "ART_SUCCESS=%~dp0Saved\ArtFoundationImport.ok"
 
 echo ==========================================================
 echo   UltraRealFPS - Build + Run Unreal Engine 5.8
@@ -56,7 +57,7 @@ if not exist "%EDITOR%" (
 )
 
 if exist "%ART_SOURCE%" (
-    if not exist "%ART_SENTINEL%" (
+    if not exist "%ART_SUCCESS%" (
         echo.
         echo ==========================================================
         echo   PREMIER IMPORT DU KIT ART FOUNDATION
