@@ -22,7 +22,17 @@ Objectif : valider toute la mise à jour en une seule compilation/session.
 - Les intérieurs restent visibles sans devenir gris uniforme.
 - Le passage extérieur/intérieur ne doit pas provoquer de pompage d'exposition extrême.
 
-## 4. Environnement / instancing
+## 4. Architecture industrielle
+- Entrepôt Est : quatre baies de chargement distinctes visibles, quai et auvent sans blocage du joueur.
+- Toiture de l'entrepôt : unités de ventilation visibles et aucune collision invisible.
+- CQB Ouest : nouvelle ligne de toit et entrée couverte sans fermer les passages existants.
+- Portique OPS : cabine et structure lisibles depuis la zone centrale.
+- Cour Sud : pipe-rack et conduites visibles sans bloquer les routes principales.
+- Tour Nord : silhouette clairement visible depuis le centre du compound.
+- Mur périphérique : travées visibles sans modifier la collision principale.
+- Signalétique 3D : texte lisible et orienté vers les zones attendues.
+
+## 5. Environnement / instancing
 - Démarrage : aucun crash lors de la construction du compound.
 - Entrepôt Est : poutres/colonnes/panneaux supplémentaires visibles sans collisions invisibles.
 - Shoot-house Ouest : encadrements et trims visibles sans bloquer les passages.
@@ -30,13 +40,13 @@ Objectif : valider toute la mise à jour en une seule compilation/session.
 - Les détails décoratifs ne doivent pas intercepter les tirs.
 - Vérifier l'absence de chute de FPS anormale par rapport à la build précédente.
 
-## 5. Lampes de service
+## 6. Lampes de service
 - Les cinq lampadaires sont visibles comme repères périphériques.
 - Leur lumière reste localisée, sans transformer toute la map en zone surexposée.
 - Aucun scintillement ou lumière restant dans le vide.
 - Les lampadaires décoratifs n'empêchent pas le passage du joueur.
 
-## 6. Impacts visuels
+## 7. Impacts visuels
 - Béton : marque sombre plate + quelques fragments gris, sans grosse boule visible.
 - Métal : étincelles très brèves, plus marquées sur ricochet.
 - Bois : éclats allongés brun/orange, plus lents que les étincelles métal.
@@ -44,26 +54,26 @@ Objectif : valider toute la mise à jour en une seule compilation/session.
 - Les débris ne doivent avoir aucune collision avec le joueur.
 - Tirer en automatique sur un mur ne doit pas provoquer de freeze majeur.
 
-## 7. Muzzle flash
+## 8. Muzzle flash
 - Le flash joueur dure seulement quelques dizaines de millisecondes.
 - La lumière éclaire brièvement la surface devant le canon, pas uniquement autour du joueur.
 - En AUTO, variation légère de rayon/intensité entre les tirs.
 - Les ennemis utilisent le même principe sans halo permanent.
 - Après mort/respawn, aucune lumière de muzzle flash ne reste allumée.
 
-## 8. Grenade / explosion
+## 9. Grenade / explosion
 - Explosion plus vive au départ puis extinction rapide.
 - Des impacts secondaires peuvent apparaître sur murs/sols proches.
 - Ces impacts secondaires ne doivent pas jouer neuf sons d'impact simultanés.
 - La logique de dégâts/occlusion de grenade reste inchangée.
 
-## 9. Détails environnementaux
+## 10. Détails environnementaux
 - Entrepôt Est : poutres de plafond visibles, sans collision invisible.
 - Bureau sécurité : encadrement/plinthes/luminaire visibles sans bloquer la porte.
 - Maintenance : tuyaux et cable tray visibles sans gêner le déplacement.
 - Marquages centraux : aucune collision et aucun effet sur la balistique.
 
-## 10. Viewmodel / arme
+## 11. Viewmodel / arme
 - Déplacements rapides de souris : l'arme accuse légèrement le mouvement sans déplacer le point d'impact réel.
 - Démarrage/arrêt de sprint : petite inertie perceptible, sans oscillation permanente.
 - ADS : inertie fortement réduite et visée stable.
@@ -71,17 +81,17 @@ Objectif : valider toute la mise à jour en une seule compilation/session.
 - Vérifier la nouvelle silhouette : upper receiver, guidon avant, pontet et poignée avant visibles.
 - Le viseur conserve un alignement exploitable en ADS.
 
-## 11. Fusil / acoustique
+## 12. Fusil / acoustique
 - Tirer en extérieur : coup sec + queue extérieure perceptible, sans répétition infinie.
 - Entrer dans le bureau de sécurité, fermer la porte et tirer : la queue doit paraître plus courte/dense que dehors.
 - Tirer en AUTO : pas de freeze marqué dû à la génération audio.
 - Un ennemi lointain qui tire doit rester localisable à gauche/droite par le son.
 
-## 12. Occlusion
+## 13. Occlusion
 - Se placer derrière un mur pendant qu'un ennemi tire : son plus étouffé/faible qu'en ligne ouverte.
 - Ouvrir/fermer une porte entre une source et le joueur doit modifier naturellement l'occlusion grâce à sa collision.
 
-## 13. Pas / surfaces
+## 14. Pas / surfaces
 - Béton : pas sourds/compacts.
 - Marcher sur un objet métallique : timbre plus métallique.
 - Marcher sur une caisse/plateforme bois : timbre différent.
@@ -89,23 +99,23 @@ Objectif : valider toute la mise à jour en une seule compilation/session.
 - Alt / accroupi : pas plus discrets.
 - Atterrissage après un saut : impact supplémentaire si la chute est assez rapide.
 
-## 14. IA et bruit joueur
+## 15. IA et bruit joueur
 - Approcher un ennemi accroupi derrière une séparation : il ne doit pas détecter le joueur à grande distance uniquement à cause des pas.
 - Sprinter près d'un ennemi sans ligne de vue : il doit pouvoir enquêter sur la dernière position sonore.
 - Manipuler une porte proche d'un ennemi : elle peut l'alerter.
 - Un mur doit réduire fortement cette perception sonore.
 - Les limites de tireurs simultanés doivent toujours empêcher une exécution instantanée par tout le groupe.
 
-## 15. Near miss
+## 16. Near miss
 - Se faire tirer dessus sans être touché : une balle passant près de la tête/du torse peut produire un crack bref et de la suppression.
 - Une balle arrêtée par un mur ne doit pas produire de crack de near-miss de l'autre côté.
 
-## 16. Impacts / douilles
+## 17. Impacts / douilles
 - Métal, bois, béton et chair ont des impacts audio distincts.
 - Une douille éjectée produit au maximum un cliquetis principal lorsqu'elle touche le sol/une surface.
 - Le nombre de douilles ne doit pas provoquer de spam audio continu.
 
-## 17. Portes
+## 18. Portes
 - Regarder une porte à courte distance : HUD `E OUVRIR LA PORTE`.
 - `E` ouvre la porte dans le sens opposé au joueur.
 - Nouveau prompt : `E FERMER LA PORTE`.
@@ -113,17 +123,17 @@ Objectif : valider toute la mise à jour en une seule compilation/session.
 - La porte ouverte ne doit pas se téléporter ni tourner autour de son centre : le pivot reste côté charnière.
 - Tirer dans la porte donne un feedback métal.
 
-## 18. Nouveaux intérieurs
+## 19. Nouveaux intérieurs
 - Bureau sécurité sud-est : lumière chaude, collision correcte, pas de mur invisible dans l'entrée.
 - Maintenance nord-est : lumière froide, porte fonctionnelle.
 - Vérifier qu'un ennemi n'est pas obligé d'ouvrir une porte pour continuer le combat principal.
 
-## 19. Armure ennemie
+## 20. Armure ennemie
 - Détruire un casque ennemi : il disparaît.
 - Tir suivant dans la zone de tête : aucun impact métallique ne doit provenir d'un casque invisible.
 - Le gilet continue à absorber selon sa durabilité.
 
-## 20. Régressions importantes
+## 21. Régressions importantes
 - Balistique bois/métal/béton toujours fonctionnelle.
 - Casque/gilet et blessures ennemies toujours fonctionnels.
 - `V` zéro, `B` modes de tir, `T` Low Ready, `G` grenade, `H` bandage, `F` lampe.
