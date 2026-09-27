@@ -1,0 +1,38 @@
+# Unreal Engine generated files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+
+# IDE / build system
+*.sln
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.userprefs
+.vscode/
+
+# Logs / temporary
+*.log
+*.tmp
+*.bak
+*.pdb
+*.obj
+*.pch
+*.ipch
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Packaged builds
+Builds/
+StagedBuilds/
+
+# Keep project source/config/content tracked
+!Source/
+!Config/
+!Content/
+!*.uproject
