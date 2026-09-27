@@ -79,6 +79,14 @@ AURFPSCharacter::AURFPSCharacter()
     WeaponGrip = CreateWeaponPart(TEXT("WeaponGrip"), FVector(7.f, 0.f, -11.f), FVector(0.06f, 0.05f, 0.13f), FRotator(0.f, 0.f, 12.f));
     WeaponMuzzle = CreateWeaponPart(TEXT("WeaponMuzzle"), FVector(74.f, 0.f, -0.1f), FVector(0.026f, 0.026f, 0.075f), FRotator(0.f, 90.f, 0.f));
 
+    // Extra silhouette pieces keep the placeholder carbine readable as a weapon rather than
+    // one long collection of boxes. These remain engine primitives and can later be replaced
+    // one-for-one by a proper skeletal first-person weapon asset.
+    WeaponUpperReceiver = CreateWeaponPart(TEXT("WeaponUpperReceiver"), FVector(5.f, 0.f, 4.7f), FVector(0.20f, 0.068f, 0.030f));
+    WeaponFrontSight = CreateWeaponPart(TEXT("WeaponFrontSight"), FVector(43.f, 0.f, 5.8f), FVector(0.025f, 0.022f, 0.060f));
+    WeaponTriggerGuard = CreateWeaponPart(TEXT("WeaponTriggerGuard"), FVector(1.f, 0.f, -7.6f), FVector(0.082f, 0.048f, 0.018f));
+    WeaponForegrip = CreateWeaponPart(TEXT("WeaponForegrip"), FVector(30.f, 0.f, -8.8f), FVector(0.040f, 0.043f, 0.095f), FRotator(0.f, 0.f, 7.f));
+
     LeftArm = CreateWeaponPart(TEXT("LeftArm"), FVector(18.f, -11.f, -19.f), FVector(0.24f, 0.055f, 0.055f), FRotator(0.f, -12.f, 16.f));
     RightArm = CreateWeaponPart(TEXT("RightArm"), FVector(-4.f, 10.f, -20.f), FVector(0.27f, 0.055f, 0.055f), FRotator(0.f, 15.f, -18.f));
 
@@ -89,7 +97,8 @@ AURFPSCharacter::AURFPSCharacter()
         TArray<UStaticMeshComponent*> CubeParts =
         {
             WeaponReceiver, WeaponHandguard, WeaponStock, WeaponMagazine, WeaponRail,
-            WeaponSight, WeaponGrip, LeftArm, RightArm
+            WeaponSight, WeaponGrip, WeaponUpperReceiver, WeaponFrontSight, WeaponTriggerGuard,
+            WeaponForegrip, LeftArm, RightArm
         };
         for (UStaticMeshComponent* Part : CubeParts)
         {
@@ -149,7 +158,8 @@ void AURFPSCharacter::BeginPlay()
             const TArray<UStaticMeshComponent*> WeaponParts =
             {
                 WeaponReceiver, WeaponHandguard, WeaponBarrel, WeaponStock, WeaponMagazine,
-                WeaponRail, WeaponSight, WeaponOpticLens, WeaponGrip, WeaponMuzzle
+                WeaponRail, WeaponSight, WeaponOpticLens, WeaponGrip, WeaponMuzzle,
+                WeaponUpperReceiver, WeaponFrontSight, WeaponTriggerGuard, WeaponForegrip
             };
             for (UStaticMeshComponent* Part : WeaponParts)
             {
@@ -961,8 +971,19 @@ void AURFPSCharacter::UpdateCamera(float DeltaSeconds)
 void AURFPSCharacter::UpdateWeaponPresentation(float DeltaSeconds)
 {
     const float AimScale = bAiming ? 0.28f : 1.f;
-    const float SpeedAlpha = FMath::Clamp(GetVelocity().Size2D() / SprintSpeed, 0.f, 1.f);
-    const bool bMoving = GetVelocity().SizeSquared2D() > 100.f && GetCharacterMovement()->IsMovingOnGround();
+    const FVector CurrentPlanarVelocity(GetVelocity().X, GetVelocity().Y, 0.f);
+    const float SpeedAlpha = FMath::Clamp(CurrentPlanarVelocity.Size() / SprintSpeed, 0.f, 1.f);
+    const bool bMoving = CurrentPlanarVelocity.SizeSquared() > 100.f && GetCharacterMovement()->IsMovingOnGround();
+
+    FVector PlanarAcceleration = FVector::ZeroVector;
+    if (DeltaSeconds > KINDA_SMALL_NUMBER)
+    {
+        PlanarAcceleration = (CurrentPlanarVelocity - PreviousPlanarVelocity) / DeltaSeconds;
+    }
+    PreviousPlanarVelocity = CurrentPlanarVelocity;
+
+    const float ForwardAcceleration = FVector::DotProduct(PlanarAcceleration, GetActorForwardVector());
+    const float RightAcceleration = FVector::DotProduct(PlanarAcceleration, GetActorRightVector());
 
     FVector TargetLocation = HipWeaponLocation;
     FRotator TargetRotation = HipWeaponRotation;
@@ -972,8 +993,8 @@ void AURFPSCharacter::UpdateWeaponPresentation(float DeltaSeconds)
         TargetLocation = AimWeaponLocation;
         const float HoldScale = bHoldingBreath ? 0.24f : 1.f;
         const float SuppressionScale = 1.f + SuppressionFeedback * 1.3f;
-        TargetRotation.Pitch += FMath::Sin(BreathTime * 1.55f) * 0.12f * HoldScale * SuppressionScale;
-        TargetRotation.Yaw += FMath::Cos(BreathTime * 1.13f) * 0.09f * HoldScale * SuppressionScale;
+        TargetRotation.Pitch += FMath::Sin(BreathTime * 1.55f) * 0.10f * HoldScale * SuppressionScale;
+        TargetRotation.Yaw += FMath::Cos(BreathTime * 1.13f) * 0.075f * HoldScale * SuppressionScale;
     }
     else if (bSprinting)
     {
@@ -989,6 +1010,14 @@ void AURFPSCharacter::UpdateWeaponPresentation(float DeltaSeconds)
     {
         TargetLocation = HipWeaponLocation + FVector(-5.f, 10.f, -11.f);
         TargetRotation = FRotator(-12.f, 2.f, 24.f);
+
+        if (ActiveReloadDuration > KINDA_SMALL_NUMBER)
+        {
+            const float ReloadPhase = FMath::Clamp(ReloadElapsed / ActiveReloadDuration, 0.f, 1.f);
+            const float ReloadArc = FMath::Sin(ReloadPhase * PI);
+            TargetLocation += FVector(-3.5f, 5.5f, -3.5f) * ReloadArc;
+            TargetRotation += FRotator(-5.f, 2.f, 13.f) * ReloadArc;
+        }
     }
     else if (bLowReady)
     {
@@ -996,20 +1025,42 @@ void AURFPSCharacter::UpdateWeaponPresentation(float DeltaSeconds)
         TargetRotation = LowReadyWeaponRotation;
     }
 
-    const FVector MouseSway(0.f, -MouseInputX * 0.33f * AimScale, MouseInputY * 0.27f * AimScale);
+    // Viewmodel inertia reacts to both look input and changes in player velocity. This creates
+    // weapon mass without adding camera lag or changing the actual ballistic aim direction.
+    const float InertiaScale = bAiming ? 0.30f : (bSprinting ? 1.15f : 1.f);
+    const FVector TargetInertiaLocation(
+        FMath::Clamp(-ForwardAcceleration * 0.0022f, -1.7f, 1.7f),
+        FMath::Clamp(-MouseInputX * 0.44f - RightAcceleration * 0.00145f, -2.15f, 2.15f),
+        FMath::Clamp(MouseInputY * 0.30f, -1.25f, 1.25f));
+
+    const FRotator TargetInertiaRotation(
+        FMath::Clamp(MouseInputY * 0.72f + ForwardAcceleration * 0.00085f, -2.25f, 2.25f),
+        FMath::Clamp(-MouseInputX * 0.88f - RightAcceleration * 0.00075f, -2.8f, 2.8f),
+        FMath::Clamp(-MouseInputX * 0.48f + RightAcceleration * 0.00110f, -2.0f, 2.0f));
+
+    WeaponInertiaLocation = FMath::VInterpTo(WeaponInertiaLocation, TargetInertiaLocation * InertiaScale, DeltaSeconds, bAiming ? 10.f : 7.5f);
+    WeaponInertiaRotation = FMath::RInterpTo(WeaponInertiaRotation, TargetInertiaRotation * InertiaScale, DeltaSeconds, bAiming ? 10.f : 7.5f);
+
     FVector WalkSway = FVector::ZeroVector;
     if (bMoving && !bAiming)
     {
-        const float WalkMultiplier = bWalkingSlow ? 0.55f : 1.f;
-        WalkSway.Y = FMath::Sin(HeadBobTime * 0.5f) * 0.9f * SpeedAlpha * WalkMultiplier;
-        WalkSway.Z = FMath::Abs(FMath::Sin(HeadBobTime)) * 0.8f * SpeedAlpha * WalkMultiplier;
+        const float WalkMultiplier = bWalkingSlow ? 0.48f : (bSprinting ? 1.22f : 1.f);
+        WalkSway.X = FMath::Cos(HeadBobTime) * 0.20f * SpeedAlpha * WalkMultiplier;
+        WalkSway.Y = FMath::Sin(HeadBobTime * 0.5f) * 0.72f * SpeedAlpha * WalkMultiplier;
+        WalkSway.Z = (FMath::Abs(FMath::Sin(HeadBobTime)) - 0.5f) * 0.62f * SpeedAlpha * WalkMultiplier;
     }
+
+    const float IdleBreathScale = bAiming ? 0.12f : 0.30f;
+    const FVector IdleBreath(
+        0.f,
+        FMath::Sin(BreathTime * 0.72f) * IdleBreathScale,
+        FMath::Cos(BreathTime * 0.92f) * IdleBreathScale * 0.65f);
 
     WeaponKickLocation = FMath::VInterpTo(WeaponKickLocation, FVector::ZeroVector, DeltaSeconds, 16.f);
     WeaponKickRotation = FMath::RInterpTo(WeaponKickRotation, FRotator::ZeroRotator, DeltaSeconds, 15.f);
 
-    TargetLocation += MouseSway + WalkSway + WeaponKickLocation;
-    TargetRotation += WeaponKickRotation;
+    TargetLocation += WalkSway + IdleBreath + WeaponInertiaLocation + WeaponKickLocation;
+    TargetRotation += WeaponInertiaRotation + WeaponKickRotation;
 
     if (WeaponObstructionAlpha > 0.01f && !bSprinting && !bReloading && !bTreating)
     {
@@ -1017,8 +1068,9 @@ void AURFPSCharacter::UpdateWeaponPresentation(float DeltaSeconds)
         TargetRotation += FRotator(28.f, 9.f, -15.f) * WeaponObstructionAlpha;
     }
 
-    WeaponRoot->SetRelativeLocation(FMath::VInterpTo(WeaponRoot->GetRelativeLocation(), TargetLocation, DeltaSeconds, bAiming ? 18.f : 12.f));
-    WeaponRoot->SetRelativeRotation(FMath::RInterpTo(WeaponRoot->GetRelativeRotation(), TargetRotation, DeltaSeconds, bAiming ? 18.f : 12.f));
+    const float PresentationSpeed = bAiming ? 19.f : (bSprinting ? 10.f : 13.f);
+    WeaponRoot->SetRelativeLocation(FMath::VInterpTo(WeaponRoot->GetRelativeLocation(), TargetLocation, DeltaSeconds, PresentationSpeed));
+    WeaponRoot->SetRelativeRotation(FMath::RInterpTo(WeaponRoot->GetRelativeRotation(), TargetRotation, DeltaSeconds, PresentationSpeed));
 
     if (WeaponMagazine)
     {
