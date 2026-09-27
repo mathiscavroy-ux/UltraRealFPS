@@ -9,6 +9,7 @@ class AStaticMeshActor;
 class UMaterialInterface;
 class UMaterialInstanceDynamic;
 class UPhysicalMaterial;
+class UInstancedStaticMeshComponent;
 class AURFPSEnemy;
 class AURFPSDoor;
 
@@ -66,6 +67,7 @@ private:
         EBlockStyle Style = EBlockStyle::Dark, bool bCastShadow = false);
     void SpawnDetailCylinder(const FVector& Location, const FVector& Scale, const FRotator& Rotation = FRotator::ZeroRotator,
         EBlockStyle Style = EBlockStyle::Metal, bool bCastShadow = false);
+    UInstancedStaticMeshComponent* GetOrCreateDetailISM(EBlockStyle Style, bool bCylinder, bool bCastShadow);
     AURFPSDoor* SpawnDoor(const FVector& Location, const FRotator& Rotation = FRotator::ZeroRotator);
     UMaterialInterface* GetMaterialForStyle(EBlockStyle Style) const;
     UPhysicalMaterial* GetPhysicalMaterialForStyle(EBlockStyle Style) const;
@@ -92,6 +94,8 @@ private:
     UPROPERTY() UPhysicalMaterial* ConcretePhysicalMaterial = nullptr;
     UPROPERTY() UPhysicalMaterial* MetalPhysicalMaterial = nullptr;
     UPROPERTY() UPhysicalMaterial* WoodPhysicalMaterial = nullptr;
+    UPROPERTY(Transient) TArray<UInstancedStaticMeshComponent*> DetailISMComponents;
+    TMap<uint32, UInstancedStaticMeshComponent*> DetailISMCache;
 
     int32 CurrentWave = 1;
     int32 EnemiesAlive = 0;
