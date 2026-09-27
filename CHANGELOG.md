@@ -1,5 +1,27 @@
 # UltraRealFPS — Changelog
 
+## Industrial Architecture Expansion — en test
+
+### Architecture lisible à moyenne distance
+- vraie façade de chargement sur l'entrepôt Est : quai, auvent, quatre baies, nervures, poteaux et bollards ;
+- unités de ventilation sur toiture et silhouette supérieure plus travaillée ;
+- bloc CQB Ouest avec toiture en plusieurs hauteurs, entrée couverte et modules de façade ;
+- portique central converti en structure plus complète avec truss et cabine OPS ;
+- cour Sud enrichie avec pipe-rack, conduites suspendues et zone électrique ;
+- nouvelle tour de surveillance au Nord ;
+- travées verticales ajoutées sur le mur périphérique pour casser les longues bandes plates ;
+- signalétique 3D : WAREHOUSE 01, CQB WEST, OPS, HIGH VOLTAGE et TOWER 02.
+
+### Rendu
+- exposition légèrement remontée par rapport à la build précédente ;
+- soleil et skylight rééquilibrés pour conserver les ombres sans boucher les façades ;
+- détails répétitifs toujours instanciés pour limiter l'overhead CPU.
+
+### Validation
+- branche : `dev/visible-environment-overhaul` ;
+- compilation/runtime UE 5.8 à valider avant merge dans `main`.
+
+
 ## Visible Environment Overhaul — en test
 
 ### Changements immédiatement visibles
