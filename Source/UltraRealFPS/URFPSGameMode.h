@@ -46,6 +46,9 @@ private:
         Wood,
         Metal,
         Dark,
+        Asphalt,
+        ConcreteLight,
+        PaintBlue,
         Accent,
         Hazard,
         SupplyAmmo,
@@ -86,6 +89,9 @@ private:
     UPROPERTY() UMaterialInstanceDynamic* WoodMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* MetalMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* DarkMaterial = nullptr;
+    UPROPERTY() UMaterialInstanceDynamic* AsphaltMaterial = nullptr;
+    UPROPERTY() UMaterialInstanceDynamic* ConcreteLightMaterial = nullptr;
+    UPROPERTY() UMaterialInstanceDynamic* PaintBlueMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* AccentMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* HazardMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* AmmoMaterial = nullptr;
