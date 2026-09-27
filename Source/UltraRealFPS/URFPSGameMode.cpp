@@ -50,6 +50,7 @@ void AURFPSGameMode::StartPlay()
     DestroyLegacyLighting();
     BuildLighting();
     CreateMaterials();
+    LoadImportedArtAssets();
     BuildArena();
     Super::StartPlay();
     SpawnSupplies();
@@ -174,6 +175,43 @@ void AURFPSGameMode::CreateMaterials()
     if (ConcretePhysicalMaterial) ConcretePhysicalMaterial->SurfaceType = SurfaceType1;
     if (MetalPhysicalMaterial) MetalPhysicalMaterial->SurfaceType = SurfaceType2;
     if (WoodPhysicalMaterial) WoodPhysicalMaterial->SurfaceType = SurfaceType3;
+}
+
+void AURFPSGameMode::LoadImportedArtAssets()
+{
+    ArtContainer20 = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_Container20_A.SM_Container20_A"));
+    ArtConcreteBarrier = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_ConcreteBarrier_A.SM_ConcreteBarrier_A"));
+    ArtIndustrialCrate = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_IndustrialCrate_A.SM_IndustrialCrate_A"));
+    ArtPallet = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_Pallet_A.SM_Pallet_A"));
+    ArtElectricalCabinet = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_ElectricalCabinet_A.SM_ElectricalCabinet_A"));
+    ArtHVAC = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_HVAC_Rooftop_A.SM_HVAC_Rooftop_A"));
+    ArtPipeRack = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_PipeRack_Module_A.SM_PipeRack_Module_A"));
+    ArtLoadingBay = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_LoadingBay_A.SM_LoadingBay_A"));
+    ArtLampPost = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_LampPost_A.SM_LampPost_A"));
+    ArtFuelTank = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_FuelTank_A.SM_FuelTank_A"));
+    ArtStorageRack = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Environment/Industrial/SM_StorageRack_A.SM_StorageRack_A"));
+}
+
+AStaticMeshActor* AURFPSGameMode::SpawnImportedArtMesh(UStaticMesh* MeshAsset, const FVector& Location,
+    const FRotator& Rotation, const FVector& Scale, bool bCollision, EBlockStyle SurfaceStyle)
+{
+    if (!MeshAsset || !GetWorld()) return nullptr;
+
+    AStaticMeshActor* Actor = GetWorld()->SpawnActor<AStaticMeshActor>(Location, Rotation);
+    if (!Actor) return nullptr;
+
+    UStaticMeshComponent* Mesh = Actor->GetStaticMeshComponent();
+    Mesh->SetMobility(EComponentMobility::Movable);
+    Mesh->SetStaticMesh(MeshAsset);
+    Mesh->SetCollisionProfileName(bCollision ? TEXT("BlockAll") : TEXT("NoCollision"));
+    Mesh->SetGenerateOverlapEvents(false);
+    Mesh->SetCastShadow(true);
+    if (UPhysicalMaterial* PhysicalMaterial = GetPhysicalMaterialForStyle(SurfaceStyle))
+    {
+        Mesh->SetPhysMaterialOverride(PhysicalMaterial);
+    }
+    Actor->SetActorScale3D(Scale);
+    return Actor;
 }
 
 UMaterialInterface* AURFPSGameMode::GetMaterialForStyle(EBlockStyle Style) const
@@ -936,6 +974,118 @@ void AURFPSGameMode::BuildIndustrialArchitecturePass()
             FRotator::ZeroRotator, EBlockStyle::ConcreteLight, true);
         SpawnDetailBlock(FVector(-5488.f, Offset, 155.f), FVector(0.08f, 0.11f, 3.7f),
             FRotator::ZeroRotator, EBlockStyle::ConcreteLight, true);
+    }
+
+    // ---------------------------------------------------------------------
+    // ART FOUNDATION KIT — real imported meshes generated in ArtSource/Industrial.
+    // The branch remains playable without them, but once imported they replace the strongest
+    // "grey cube" read with distinct silhouettes and proper mesh detail.
+    // ---------------------------------------------------------------------
+    if (ArtLoadingBay)
+    {
+        for (int32 BayIndex = 0; BayIndex < WarehouseBayX.Num(); ++BayIndex)
+        {
+            SpawnImportedArtMesh(ArtLoadingBay, FVector(WarehouseBayX[BayIndex], 250.f, -100.f),
+                FRotator::ZeroRotator, FVector::OneVector, false, EBlockStyle::Metal);
+        }
+    }
+
+    if (ArtContainer20)
+    {
+        SpawnImportedArtMesh(ArtContainer20, FVector(3150.f, -4300.f, -100.f),
+            FRotator(0.f, 7.f, 0.f), FVector::OneVector, true, EBlockStyle::Metal);
+        SpawnImportedArtMesh(ArtContainer20, FVector(-3300.f, -4250.f, -100.f),
+            FRotator(0.f, -9.f, 0.f), FVector::OneVector, true, EBlockStyle::Metal);
+        SpawnImportedArtMesh(ArtContainer20, FVector(-3300.f, -4250.f, 159.f),
+            FRotator(0.f, -9.f, 0.f), FVector::OneVector, true, EBlockStyle::Metal);
+    }
+
+    if (ArtConcreteBarrier)
+    {
+        const TArray<FTransform> BarrierTransforms =
+        {
+            FTransform(FRotator(0.f, 16.f, 0.f), FVector(-720.f, -620.f, -100.f)),
+            FTransform(FRotator(0.f, -18.f, 0.f), FVector(740.f, -620.f, -100.f)),
+            FTransform(FRotator(0.f, 90.f, 0.f), FVector(1800.f, -1750.f, -100.f)),
+            FTransform(FRotator(0.f, 90.f, 0.f), FVector(-1850.f, -1750.f, -100.f))
+        };
+        for (const FTransform& Transform : BarrierTransforms)
+        {
+            SpawnImportedArtMesh(ArtConcreteBarrier, Transform.GetLocation(), Transform.Rotator(),
+                FVector::OneVector, true, EBlockStyle::Cover);
+        }
+    }
+
+    if (ArtPipeRack)
+    {
+        SpawnImportedArtMesh(ArtPipeRack, FVector(-1000.f, -3250.f, -100.f),
+            FRotator::ZeroRotator, FVector::OneVector, true, EBlockStyle::Metal);
+        SpawnImportedArtMesh(ArtPipeRack, FVector(1000.f, -3250.f, -100.f),
+            FRotator::ZeroRotator, FVector::OneVector, true, EBlockStyle::Metal);
+    }
+
+    if (ArtFuelTank)
+    {
+        SpawnImportedArtMesh(ArtFuelTank, FVector(4050.f, 700.f, -100.f),
+            FRotator(0.f, 90.f, 0.f), FVector::OneVector, true, EBlockStyle::Metal);
+        SpawnImportedArtMesh(ArtFuelTank, FVector(4500.f, 700.f, -100.f),
+            FRotator(0.f, 90.f, 0.f), FVector::OneVector, true, EBlockStyle::Metal);
+    }
+
+    if (ArtHVAC)
+    {
+        SpawnImportedArtMesh(ArtHVAC, FVector(900.f, 1600.f, 370.f),
+            FRotator(0.f, 12.f, 0.f), FVector::OneVector, false, EBlockStyle::Metal);
+        SpawnImportedArtMesh(ArtHVAC, FVector(2100.f, 2100.f, 370.f),
+            FRotator(0.f, -9.f, 0.f), FVector::OneVector, false, EBlockStyle::Metal);
+        SpawnImportedArtMesh(ArtHVAC, FVector(3000.f, 1400.f, 370.f),
+            FRotator(0.f, 6.f, 0.f), FVector::OneVector, false, EBlockStyle::Metal);
+    }
+
+    if (ArtElectricalCabinet)
+    {
+        SpawnImportedArtMesh(ArtElectricalCabinet, FVector(4750.f, 4200.f, -100.f),
+            FRotator(0.f, -90.f, 0.f), FVector::OneVector, true, EBlockStyle::Metal);
+        SpawnImportedArtMesh(ArtElectricalCabinet, FVector(2500.f, -2650.f, -100.f),
+            FRotator(0.f, 180.f, 0.f), FVector::OneVector, true, EBlockStyle::Metal);
+    }
+
+    if (ArtStorageRack)
+    {
+        SpawnImportedArtMesh(ArtStorageRack, FVector(1750.f, 1000.f, -100.f),
+            FRotator(0.f, 90.f, 0.f), FVector::OneVector, true, EBlockStyle::Metal);
+        SpawnImportedArtMesh(ArtStorageRack, FVector(2550.f, 2650.f, -100.f),
+            FRotator(0.f, 0.f, 0.f), FVector::OneVector, true, EBlockStyle::Metal);
+    }
+
+    if (ArtPallet && ArtIndustrialCrate)
+    {
+        const TArray<FVector> PalletSpots =
+        {
+            FVector(1100.f, -2050.f, -100.f), FVector(1260.f, -2050.f, -100.f),
+            FVector(-1150.f, 650.f, -100.f), FVector(3050.f, 2900.f, -100.f)
+        };
+        for (int32 Index = 0; Index < PalletSpots.Num(); ++Index)
+        {
+            SpawnImportedArtMesh(ArtPallet, PalletSpots[Index], FRotator(0.f, Index * 17.f, 0.f),
+                FVector::OneVector, true, EBlockStyle::Wood);
+            SpawnImportedArtMesh(ArtIndustrialCrate, PalletSpots[Index] + FVector(0.f, 0.f, 15.f),
+                FRotator(0.f, Index * 17.f, 0.f), FVector::OneVector, true, EBlockStyle::Wood);
+        }
+    }
+
+    if (ArtLampPost)
+    {
+        const TArray<FVector> ArtLampPositions =
+        {
+            FVector(-4400.f, -3400.f, -100.f), FVector(4400.f, -3400.f, -100.f),
+            FVector(-4400.f, 3300.f, -100.f), FVector(4400.f, 3300.f, -100.f)
+        };
+        for (const FVector& Position : ArtLampPositions)
+        {
+            SpawnImportedArtMesh(ArtLampPost, Position, FRotator::ZeroRotator,
+                FVector::OneVector, false, EBlockStyle::Metal);
+        }
     }
 }
 
