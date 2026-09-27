@@ -53,9 +53,17 @@ if errorlevel 1 git config user.email "mathiscavroy-ux@users.noreply.github.com"
 
 git lfs version >nul 2>nul
 if errorlevel 1 (
-    echo [INFO] Git LFS n'est pas installe.
-    echo        Le code source peut etre publie tant qu'aucun gros asset LFS n'est ajoute.
-    echo        Avant les vrais .uasset/.umap/audio/textures, installe Git LFS.
+    if exist "%SOURCE_DIR%\ArtSource\Industrial\SM_Container20_A.glb" (
+        echo [ERREUR] Git LFS est obligatoire pour publier le nouveau kit 3D.
+        echo Installe Git LFS puis relance PUBLISH_TO_GITHUB.bat.
+        goto :gitfail
+    )
+    if exist "%SOURCE_DIR%\Content\Environment\Industrial\SM_Container20_A.uasset" (
+        echo [ERREUR] Git LFS est obligatoire pour publier les assets Unreal.
+        echo Installe Git LFS puis relance PUBLISH_TO_GITHUB.bat.
+        goto :gitfail
+    )
+    echo [INFO] Git LFS non installe, mais aucun asset binaire du kit n'a ete detecte.
 ) else (
     git lfs install --local >nul 2>nul
 )
