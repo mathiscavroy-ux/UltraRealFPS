@@ -45,9 +45,12 @@
 ## Développement actuel
 - branche : `dev/visible-environment-overhaul` ;
 - étape roadmap : **ÉTAPE 2 — graphismes / environnement** ;
-- objectif actuel : rendre l'évolution visuelle évidente dès le spawn ;
-- sol, exposition, silhouette des bâtiments et repères industriels sont en refonte ;
+- objectif actuel : sortir visuellement du blockout Unreal ;
+- façade de chargement, CQB Ouest, portique OPS, pipe-rack Sud, tour Nord et signalétique 3D sont en cours de validation ;
 - validation UE 5.8 requise avant intégration dans `main`.
+
+## Documentation build
+- `PATCH_NOTES.md` contient les patch notes de la build de test courante.
 
 ## Priorités recommandées après cette update
 1. Valider la branche `dev/visible-environment-overhaul` sous UE 5.8 puis merger si stable.
