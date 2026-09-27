@@ -93,6 +93,8 @@ private:
     UPROPERTY(VisibleAnywhere) USpotLightComponent* Flashlight;
     UPROPERTY(VisibleAnywhere) UPointLightComponent* MuzzleFlashLight;
     UPROPERTY() UMaterialInstanceDynamic* WeaponMaterial;
+    UPROPERTY() UMaterialInstanceDynamic* WeaponAccentMaterial;
+    UPROPERTY() UMaterialInstanceDynamic* OpticLensMaterial;
     UPROPERTY() UMaterialInstanceDynamic* ArmMaterial;
 
     void MoveForward(float Value);
