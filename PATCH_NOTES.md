@@ -1,5 +1,24 @@
 # UltraRealFPS — Patch Notes
 
+## Industrial Visual Rebuild — démarrage
+
+### Direction validée
+- la map est reconstruite autour de 4 zones lisibles : Spawn/Staging, Central Yard, Logistics Lane, Maintenance/Utilities ;
+- priorité au macro-layout et aux surfaces avant les micro-détails ;
+- abandon du "gris/noir partout" au profit d'une palette béton / asphalte / acier / bleu industriel / jaune sécurité ;
+- ajout des documents de production `VISUAL_REBUILD_PLAN.md`, `ART_DIRECTION.md` et `MATERIAL_PIPELINE.md`.
+
+### Pipeline prévu
+- master material environnement + instances ;
+- assets modulaires réels pour façades/containers/barrières/pipe-racks ;
+- ISM/HISM pour répétitions ;
+- PCG uniquement pour dressing secondaire une fois la composition stabilisée.
+
+### Statut
+- branche : `dev/industrial-visual-rebuild` ;
+- phase : préproduction terminée, implémentation visuelle en cours ;
+- pas encore à merger dans `main`.
+
 ## Hotfix 2 — Import Interchange sans faux échec
 - le log de test confirme que la compilation C++ réussit ;
 - les 11 GLB sont bien traités par Interchange ;
