@@ -1,5 +1,25 @@
 # UltraRealFPS — Changelog
 
+## Environment Graphics Pass — en test
+
+### Structure visuelle
+- les détails répétitifs non-collisionnants passent sur `UInstancedStaticMeshComponent` au lieu d'un Actor par élément ;
+- l'entrepôt Est reçoit davantage de poutres, colonnes et panneaux hauts ;
+- le shoot-house Ouest reçoit des encadrements et trims pour mieux lire ses pièces ;
+- la cour Sud reçoit deux volumes type conteneur avec nervures et joints ;
+- ajout de lampadaires de service comme repères visuels autour du compound.
+
+### Éclairage / performance
+- les lampes de service utilisent un falloff inverse-square et restent sans ombres pour limiter le coût ;
+- les détails décoratifs restent sans collision : ils n'altèrent ni le déplacement ni la balistique ;
+- l'instancing prépare une montée en densité visuelle avec moins d'Actors et moins d'overhead CPU.
+
+### Validation
+- branche GitHub : `dev/environment-graphics-pass` ;
+- étape roadmap : **ÉTAPE 2 — graphismes / environnement** ;
+- compilation/runtime UE 5.8 à valider sur le PC de test avant publication définitive.
+
+
 ## Visual Impact & Environment Pass — en test
 
 ### Impacts / feedback balistique
