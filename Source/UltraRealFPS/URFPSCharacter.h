@@ -92,6 +92,7 @@ private:
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* RightArm;
     UPROPERTY(VisibleAnywhere) USpotLightComponent* Flashlight;
     UPROPERTY(VisibleAnywhere) UPointLightComponent* MuzzleFlashLight;
+    UPROPERTY(VisibleAnywhere) USpotLightComponent* MuzzleFlashCone;
     UPROPERTY() UMaterialInstanceDynamic* WeaponMaterial;
     UPROPERTY() UMaterialInstanceDynamic* WeaponAccentMaterial;
     UPROPERTY() UMaterialInstanceDynamic* OpticLensMaterial;
