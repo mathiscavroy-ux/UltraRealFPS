@@ -1,5 +1,13 @@
 # UltraRealFPS — Patch Notes
 
+## Hotfix import UE 5.8 — 2026-09-27
+- compilation C++ validee sur la machine de test ;
+- correction de la validation Interchange qui cherchait une sentinelle a un chemin trop strict ;
+- normalisation automatique des Static Mesh vers `/Game/Environment/Industrial/<NomAsset>` ;
+- validation basee sur `AssetImportTask.get_objects()` et `imported_object_paths` ;
+- collisions migrees vers `StaticMeshEditorSubsystem` avec fallback de compatibilite ;
+- diagnostics des chemins reellement importes en cas de nouvel echec.
+
 ## Art Foundation Industrial Kit — Build de test
 
 **Branche GitHub :** `dev/art-foundation-industrial-kit`  
