@@ -112,7 +112,10 @@ def canonicalize_mesh(mesh, expected_name):
     current_package = package_path(mesh)
 
     if current_package != target_package:
-        existing = unreal.EditorAssetLibrary.load_asset(target_package)
+        existing = None
+        if unreal.EditorAssetLibrary.does_asset_exist(target_package):
+            existing = unreal.EditorAssetLibrary.load_asset(target_package)
+
         if isinstance(existing, unreal.StaticMesh):
             log("Asset canonique deja present: " + target_package)
             mesh = existing
@@ -175,9 +178,10 @@ def main():
     missing = []
     for expected_name in expected_names:
         target_package = DESTINATION + "/" + expected_name
-        loaded = unreal.EditorAssetLibrary.load_asset(target_package)
         disk_path = os.path.join(CONTENT_DIR, expected_name + ".uasset")
-        if not isinstance(loaded, unreal.StaticMesh) and not os.path.isfile(disk_path):
+        asset_exists = unreal.EditorAssetLibrary.does_asset_exist(target_package)
+        file_exists = os.path.isfile(disk_path)
+        if not asset_exists and not file_exists:
             missing.append("%s (asset=%s, fichier=%s)" % (expected_name, target_package, disk_path))
 
     if missing:
