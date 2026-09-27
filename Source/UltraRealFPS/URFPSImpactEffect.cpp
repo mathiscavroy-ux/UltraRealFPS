@@ -211,7 +211,7 @@ void AURFPSImpactEffect::SpawnSurfaceDebris()
     }
 }
 
-void AURFPSImpactEffect::InitializeImpact(const FVector& SurfaceNormal, bool bCharacterImpact, EPhysicalSurface SurfaceType, bool bRicochet)
+void AURFPSImpactEffect::InitializeImpact(const FVector& SurfaceNormal, bool bCharacterImpact, EPhysicalSurface SurfaceType, bool bRicochet, bool bPlayAudio)
 {
     bSoftImpact = bCharacterImpact;
     bWasRicochet = bRicochet;
@@ -228,8 +228,11 @@ void AURFPSImpactEffect::InitializeImpact(const FVector& SurfaceNormal, bool bCh
     else if (ImpactSurface == SurfaceType2) Event = EURFPSAudioEvent::ImpactMetal;
     else if (ImpactSurface == SurfaceType3) Event = EURFPSAudioEvent::ImpactWood;
 
-    const float Volume = bCharacterImpact ? 0.42f : (bWasRicochet ? 0.74f : 0.56f);
-    URFPSAudio::PlaySpatial(this, Event, GetActorLocation(), Volume, FMath::FRandRange(0.92f, 1.08f));
+    if (bPlayAudio)
+    {
+        const float Volume = bCharacterImpact ? 0.42f : (bWasRicochet ? 0.74f : 0.56f);
+        URFPSAudio::PlaySpatial(this, Event, GetActorLocation(), Volume, FMath::FRandRange(0.92f, 1.08f));
+    }
 }
 
 void AURFPSImpactEffect::Tick(float DeltaSeconds)
