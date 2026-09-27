@@ -150,6 +150,8 @@ void AURFPSCharacter::BeginPlay()
     if (UMaterialInterface* ParentMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial")))
     {
         WeaponMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
+        WeaponAccentMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
+        OpticLensMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
         ArmMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
 
         if (WeaponMaterial)
@@ -165,6 +167,25 @@ void AURFPSCharacter::BeginPlay()
             {
                 if (Part) Part->SetMaterial(0, WeaponMaterial);
             }
+        }
+
+        if (WeaponAccentMaterial)
+        {
+            WeaponAccentMaterial->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(0.018f, 0.021f, 0.024f, 1.f));
+            const TArray<UStaticMeshComponent*> AccentParts =
+            {
+                WeaponBarrel, WeaponRail, WeaponMuzzle, WeaponFrontSight, WeaponTriggerGuard
+            };
+            for (UStaticMeshComponent* Part : AccentParts)
+            {
+                if (Part) Part->SetMaterial(0, WeaponAccentMaterial);
+            }
+        }
+
+        if (OpticLensMaterial)
+        {
+            OpticLensMaterial->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(0.030f, 0.095f, 0.090f, 1.f));
+            if (WeaponOpticLens) WeaponOpticLens->SetMaterial(0, OpticLensMaterial);
         }
 
         if (ArmMaterial)
