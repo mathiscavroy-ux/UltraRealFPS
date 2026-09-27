@@ -2,6 +2,7 @@
 setlocal EnableExtensions
 
 set "REPO_URL=https://github.com/mathiscavroy-ux/UltraRealFPS.git"
+set "TARGET_BRANCH=dev/art-foundation-industrial-kit"
 REM %~dp0 finit par un antislash. On normalise le dossier pour eviter
 REM qu'un chemin cite termine par \ et perturbe l'analyse de Robocopy.
 for %%I in ("%~dp0.") do set "SOURCE_DIR=%%~fI"
@@ -14,6 +15,7 @@ echo   UltraRealFPS - publication GitHub de la baseline
 echo ==========================================================
 echo Source : %SOURCE_DIR%
 echo Depot  : %REPO_URL%
+echo Branche: %TARGET_BRANCH%
 echo.
 
 where git >nul 2>nul
@@ -27,7 +29,7 @@ if errorlevel 1 (
 if exist "%PUBLISH_DIR%" rmdir /s /q "%PUBLISH_DIR%"
 
 echo [1/5] Clone propre du depot...
-git clone "%REPO_URL%" "%PUBLISH_DIR%"
+git clone --branch "%TARGET_BRANCH%" --single-branch "%REPO_URL%" "%PUBLISH_DIR%"
 if errorlevel 1 goto :fail
 
 echo [2/5] Copie des fichiers utiles du projet...
@@ -85,8 +87,8 @@ if "%DIFFCODE%"=="0" (
     goto :gitfail
 )
 
-echo [4/5] Push vers main...
-git push origin HEAD:main
+echo [4/5] Push vers %TARGET_BRANCH%...
+git push origin HEAD:%TARGET_BRANCH%
 if errorlevel 1 goto :gitfail
 
 echo [5/5] Verification terminee.
@@ -97,7 +99,8 @@ echo.
 echo ==========================================================
 echo   PUBLICATION GITHUB REUSSIE
 echo ==========================================================
-echo Depot : mathiscavroy-ux/UltraRealFPS
+echo Depot   : mathiscavroy-ux/UltraRealFPS
+echo Branche : %TARGET_BRANCH%
 echo Le dossier de jeu original n'a pas ete transforme ni modifie par Git.
 echo.
 pause
