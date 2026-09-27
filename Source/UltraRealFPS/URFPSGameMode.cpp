@@ -10,6 +10,7 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Engine/PointLight.h"
+#include "Engine/PostProcessVolume.h"
 #include "Engine/SkyLight.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshActor.h"
@@ -79,17 +80,18 @@ void AURFPSGameMode::BuildLighting()
 
     GetWorld()->SpawnActor<ASkyAtmosphere>(ASkyAtmosphere::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator);
 
-    ADirectionalLight* Sun = GetWorld()->SpawnActor<ADirectionalLight>(FVector::ZeroVector, FRotator(-34.f, -32.f, 0.f));
+    // Lower sun angle + reduced skylight flattening gives the compound stronger readable shapes.
+    ADirectionalLight* Sun = GetWorld()->SpawnActor<ADirectionalLight>(FVector::ZeroVector, FRotator(-24.f, -36.f, 0.f));
     if (Sun)
     {
         UDirectionalLightComponent* SunComponent = Sun->GetComponent();
         if (SunComponent)
         {
             SunComponent->SetMobility(EComponentMobility::Movable);
-            SunComponent->SetIntensity(8.2f);
-            SunComponent->SetLightColor(FLinearColor(1.f, 0.93f, 0.82f));
+            SunComponent->SetIntensity(6.6f);
+            SunComponent->SetLightColor(FLinearColor(1.f, 0.88f, 0.74f));
             SunComponent->SetAtmosphereSunLight(true);
-            SunComponent->SetVolumetricScatteringIntensity(0.72f);
+            SunComponent->SetVolumetricScatteringIntensity(0.62f);
         }
     }
 
@@ -97,13 +99,13 @@ void AURFPSGameMode::BuildLighting()
     if (Fog && Fog->GetComponent())
     {
         UExponentialHeightFogComponent* FogComponent = Fog->GetComponent();
-        FogComponent->SetFogDensity(0.0025f);
-        FogComponent->SetFogHeightFalloff(0.36f);
-        FogComponent->SetFogInscatteringColor(FLinearColor(0.53f, 0.59f, 0.64f));
+        FogComponent->SetFogDensity(0.0018f);
+        FogComponent->SetFogHeightFalloff(0.34f);
+        FogComponent->SetFogInscatteringColor(FLinearColor(0.40f, 0.48f, 0.56f));
         FogComponent->SetVolumetricFog(true);
-        FogComponent->SetVolumetricFogDistance(6200.f);
-        FogComponent->SetVolumetricFogScatteringDistribution(0.42f);
-        FogComponent->SetVolumetricFogAlbedo(FColor(215, 220, 225));
+        FogComponent->SetVolumetricFogDistance(7000.f);
+        FogComponent->SetVolumetricFogScatteringDistribution(0.36f);
+        FogComponent->SetVolumetricFogAlbedo(FColor(198, 207, 214));
     }
 
     ASkyLight* Sky = GetWorld()->SpawnActor<ASkyLight>(FVector::ZeroVector, FRotator::ZeroRotator);
@@ -111,9 +113,30 @@ void AURFPSGameMode::BuildLighting()
     {
         USkyLightComponent* SkyComponent = Sky->GetLightComponent();
         SkyComponent->SetMobility(EComponentMobility::Movable);
-        SkyComponent->SetIntensity(1.32f);
+        SkyComponent->SetIntensity(0.88f);
         SkyComponent->SetRealTimeCapture(true);
-        SkyComponent->SetLowerHemisphereColor(FLinearColor(0.050f, 0.060f, 0.070f));
+        SkyComponent->SetLowerHemisphereColor(FLinearColor(0.025f, 0.032f, 0.040f));
+    }
+
+    if (APostProcessVolume* PostProcess = GetWorld()->SpawnActor<APostProcessVolume>(
+        APostProcessVolume::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator))
+    {
+        PostProcess->bUnbound = true;
+        PostProcess->BlendWeight = 1.f;
+        PostProcess->Settings.bOverride_AutoExposureBias = true;
+        PostProcess->Settings.AutoExposureBias = -0.65f;
+        PostProcess->Settings.bOverride_AutoExposureMinBrightness = true;
+        PostProcess->Settings.AutoExposureMinBrightness = -2.2f;
+        PostProcess->Settings.bOverride_AutoExposureMaxBrightness = true;
+        PostProcess->Settings.AutoExposureMaxBrightness = 1.8f;
+        PostProcess->Settings.bOverride_AutoExposureSpeedUp = true;
+        PostProcess->Settings.AutoExposureSpeedUp = 3.2f;
+        PostProcess->Settings.bOverride_AutoExposureSpeedDown = true;
+        PostProcess->Settings.AutoExposureSpeedDown = 1.4f;
+        PostProcess->Settings.bOverride_LocalExposureHighlightContrastScale = true;
+        PostProcess->Settings.LocalExposureHighlightContrastScale = 0.78f;
+        PostProcess->Settings.bOverride_LocalExposureShadowContrastScale = true;
+        PostProcess->Settings.LocalExposureShadowContrastScale = 0.82f;
     }
 }
 
@@ -128,13 +151,16 @@ void AURFPSGameMode::CreateMaterials()
         return Material;
     };
 
-    FloorMaterial = MakeMaterial(FLinearColor(0.105f, 0.115f, 0.120f, 1.f));
-    WallMaterial = MakeMaterial(FLinearColor(0.175f, 0.185f, 0.190f, 1.f));
-    CoverMaterial = MakeMaterial(FLinearColor(0.235f, 0.245f, 0.235f, 1.f));
-    WoodMaterial = MakeMaterial(FLinearColor(0.235f, 0.145f, 0.070f, 1.f));
-    MetalMaterial = MakeMaterial(FLinearColor(0.085f, 0.095f, 0.105f, 1.f));
-    DarkMaterial = MakeMaterial(FLinearColor(0.048f, 0.052f, 0.058f, 1.f));
-    AccentMaterial = MakeMaterial(FLinearColor(0.34f, 0.115f, 0.035f, 1.f));
+    FloorMaterial = MakeMaterial(FLinearColor(0.060f, 0.066f, 0.070f, 1.f));
+    WallMaterial = MakeMaterial(FLinearColor(0.125f, 0.132f, 0.136f, 1.f));
+    CoverMaterial = MakeMaterial(FLinearColor(0.185f, 0.192f, 0.188f, 1.f));
+    WoodMaterial = MakeMaterial(FLinearColor(0.205f, 0.118f, 0.050f, 1.f));
+    MetalMaterial = MakeMaterial(FLinearColor(0.060f, 0.070f, 0.078f, 1.f));
+    DarkMaterial = MakeMaterial(FLinearColor(0.024f, 0.028f, 0.034f, 1.f));
+    AsphaltMaterial = MakeMaterial(FLinearColor(0.018f, 0.022f, 0.026f, 1.f));
+    ConcreteLightMaterial = MakeMaterial(FLinearColor(0.235f, 0.235f, 0.220f, 1.f));
+    PaintBlueMaterial = MakeMaterial(FLinearColor(0.018f, 0.090f, 0.160f, 1.f));
+    AccentMaterial = MakeMaterial(FLinearColor(0.42f, 0.105f, 0.025f, 1.f));
     HazardMaterial = MakeMaterial(FLinearColor(0.62f, 0.42f, 0.035f, 1.f));
     AmmoMaterial = MakeMaterial(FLinearColor(0.20f, 0.25f, 0.10f, 1.f));
     MedicalMaterial = MakeMaterial(FLinearColor(0.10f, 0.28f, 0.16f, 1.f));
@@ -157,6 +183,9 @@ UMaterialInterface* AURFPSGameMode::GetMaterialForStyle(EBlockStyle Style) const
     case EBlockStyle::Wood: return WoodMaterial;
     case EBlockStyle::Metal: return MetalMaterial;
     case EBlockStyle::Dark: return DarkMaterial;
+    case EBlockStyle::Asphalt: return AsphaltMaterial;
+    case EBlockStyle::ConcreteLight: return ConcreteLightMaterial;
+    case EBlockStyle::PaintBlue: return PaintBlueMaterial;
     case EBlockStyle::Accent: return AccentMaterial;
     case EBlockStyle::Hazard: return HazardMaterial;
     case EBlockStyle::SupplyAmmo: return AmmoMaterial;
@@ -174,6 +203,7 @@ UPhysicalMaterial* AURFPSGameMode::GetPhysicalMaterialForStyle(EBlockStyle Style
     case EBlockStyle::Wood:
         return WoodPhysicalMaterial;
     case EBlockStyle::Metal:
+    case EBlockStyle::PaintBlue:
     case EBlockStyle::Accent:
     case EBlockStyle::Hazard:
     case EBlockStyle::SupplyAmmo:
@@ -301,6 +331,30 @@ void AURFPSGameMode::BuildArena()
 {
     // Large dynamic tactical compound. Ground top surface is roughly Z=-100.
     SpawnBlock(FVector(0.f, 0.f, -150.f), FVector(110.f, 110.f, 1.f), FRotator::ZeroRotator, false, EBlockStyle::Floor);
+
+    // High-impact visual layout pass: broad road/asphalt zones and service aprons are visible
+    // immediately from the spawn, unlike the previous small-detail-only pass.
+    SpawnDetailBlock(FVector(0.f, -350.f, -96.f), FVector(50.f, 4.6f, 0.025f),
+        FRotator::ZeroRotator, EBlockStyle::Asphalt, false);
+    SpawnDetailBlock(FVector(1650.f, 1850.f, -95.f), FVector(13.5f, 12.5f, 0.030f),
+        FRotator::ZeroRotator, EBlockStyle::ConcreteLight, false);
+    SpawnDetailBlock(FVector(-3000.f, 2050.f, -95.f), FVector(14.5f, 8.8f, 0.030f),
+        FRotator::ZeroRotator, EBlockStyle::ConcreteLight, false);
+    SpawnDetailBlock(FVector(0.f, -3000.f, -95.f), FVector(34.f, 5.0f, 0.030f),
+        FRotator::ZeroRotator, EBlockStyle::Asphalt, false);
+
+    for (int32 LaneIndex = -7; LaneIndex <= 7; ++LaneIndex)
+    {
+        const float LaneX = static_cast<float>(LaneIndex) * 620.f;
+        SpawnDetailBlock(FVector(LaneX, -350.f, -92.5f), FVector(1.8f, 0.055f, 0.015f),
+            FRotator::ZeroRotator, EBlockStyle::Hazard, false);
+    }
+    for (int32 BayIndex = -4; BayIndex <= 4; ++BayIndex)
+    {
+        const float BayX = static_cast<float>(BayIndex) * 760.f;
+        SpawnDetailBlock(FVector(BayX, -2650.f, -92.5f), FVector(2.3f, 0.045f, 0.015f),
+            FRotator(0.f, BayIndex % 2 == 0 ? 5.f : -5.f, 0.f), EBlockStyle::ConcreteLight, false);
+    }
 
     // Perimeter wall.
     SpawnBlock(FVector(5500.f, 0.f, 125.f), FVector(1.f, 55.f, 4.5f), FRotator::ZeroRotator, true, EBlockStyle::Dark);
@@ -528,6 +582,47 @@ void AURFPSGameMode::BuildArena()
         SpawnDetailBlock(FVector(EdgeX, -260.f, -94.f), FVector(1.7f, 0.035f, 0.018f),
             FRotator(0.f, -12.f, 0.f), EBlockStyle::Hazard, false);
     }
+
+    // Visible-overhaul pass: large-scale silhouettes and color breaks.
+    // East warehouse roof cap and blue facade bands.
+    SpawnDetailBlock(FVector(1950.f, 1850.f, 365.f), FVector(16.8f, 16.2f, 0.16f),
+        FRotator::ZeroRotator, EBlockStyle::Dark, true);
+    SpawnDetailBlock(FVector(1850.f, 3388.f, 150.f), FVector(15.8f, 0.055f, 0.28f),
+        FRotator::ZeroRotator, EBlockStyle::PaintBlue, false);
+    SpawnDetailBlock(FVector(1850.f, 312.f, 150.f), FVector(15.8f, 0.055f, 0.28f),
+        FRotator::ZeroRotator, EBlockStyle::PaintBlue, false);
+
+    // West shoot-house gets a contrasting top band so it no longer reads as one giant dark wall.
+    SpawnDetailBlock(FVector(-3000.f, 1058.f, 310.f), FVector(15.5f, 0.05f, 0.18f),
+        FRotator::ZeroRotator, EBlockStyle::Accent, false);
+    SpawnDetailBlock(FVector(-3000.f, 3042.f, 310.f), FVector(15.5f, 0.05f, 0.18f),
+        FRotator::ZeroRotator, EBlockStyle::Accent, false);
+
+    // Two industrial storage tanks make the skyline visibly different from spawn.
+    SpawnCylinder(FVector(4100.f, 650.f, 45.f), FVector(1.25f, 1.25f, 2.6f),
+        FRotator::ZeroRotator, EBlockStyle::Metal);
+    SpawnCylinder(FVector(4400.f, 650.f, 45.f), FVector(1.25f, 1.25f, 2.6f),
+        FRotator::ZeroRotator, EBlockStyle::Metal);
+    for (int32 RingIndex = 0; RingIndex < 3; ++RingIndex)
+    {
+        const float RingZ = -25.f + static_cast<float>(RingIndex) * 120.f;
+        SpawnDetailCylinder(FVector(4100.f, 650.f, RingZ), FVector(1.34f, 1.34f, 0.050f),
+            FRotator::ZeroRotator, EBlockStyle::Accent, false);
+        SpawnDetailCylinder(FVector(4400.f, 650.f, RingZ), FVector(1.34f, 1.34f, 0.050f),
+            FRotator::ZeroRotator, EBlockStyle::Accent, false);
+    }
+    SpawnDetailCylinder(FVector(4250.f, 650.f, 250.f), FVector(0.08f, 0.08f, 2.0f),
+        FRotator(0.f, 90.f, 0.f), EBlockStyle::Metal, true);
+
+    // Main entry gantry creates an obvious landmark across the central lane.
+    SpawnBlock(FVector(-900.f, -900.f, 120.f), FVector(0.28f, 0.28f, 3.2f),
+        FRotator::ZeroRotator, true, EBlockStyle::Metal);
+    SpawnBlock(FVector(900.f, -900.f, 120.f), FVector(0.28f, 0.28f, 3.2f),
+        FRotator::ZeroRotator, true, EBlockStyle::Metal);
+    SpawnDetailBlock(FVector(0.f, -900.f, 390.f), FVector(9.4f, 0.22f, 0.22f),
+        FRotator::ZeroRotator, EBlockStyle::PaintBlue, true);
+    SpawnDetailBlock(FVector(0.f, -900.f, 355.f), FVector(5.2f, 0.24f, 0.06f),
+        FRotator::ZeroRotator, EBlockStyle::Accent, false);
 
     // Environment graphics pass: modular industrial dressing. Repeated pieces now use ISMs,
     // so the compound can carry more silhouette detail without one Actor per decorative mesh.
