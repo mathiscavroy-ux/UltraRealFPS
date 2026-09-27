@@ -203,7 +203,7 @@ AStaticMeshActor* AURFPSGameMode::SpawnImportedArtMesh(UStaticMesh* MeshAsset, c
     UStaticMeshComponent* Mesh = Actor->GetStaticMeshComponent();
     Mesh->SetMobility(EComponentMobility::Movable);
     Mesh->SetStaticMesh(MeshAsset);
-    Mesh->SetCollisionProfileName(bCollision ? TEXT("BlockAll") : TEXT("NoCollision"));
+    Mesh->SetCollisionProfileName(bCollision ? FName(TEXT("BlockAll")) : FName(TEXT("NoCollision")));
     Mesh->SetGenerateOverlapEvents(false);
     Mesh->SetCastShadow(true);
     if (UPhysicalMaterial* PhysicalMaterial = GetPhysicalMaterialForStyle(SurfaceStyle))
@@ -1019,9 +1019,9 @@ void AURFPSGameMode::BuildIndustrialArchitecturePass()
     if (ArtPipeRack)
     {
         SpawnImportedArtMesh(ArtPipeRack, FVector(-1000.f, -3250.f, -100.f),
-            FRotator::ZeroRotator, FVector::OneVector, true, EBlockStyle::Metal);
+            FRotator::ZeroRotator, FVector::OneVector, false, EBlockStyle::Metal);
         SpawnImportedArtMesh(ArtPipeRack, FVector(1000.f, -3250.f, -100.f),
-            FRotator::ZeroRotator, FVector::OneVector, true, EBlockStyle::Metal);
+            FRotator::ZeroRotator, FVector::OneVector, false, EBlockStyle::Metal);
     }
 
     if (ArtFuelTank)
