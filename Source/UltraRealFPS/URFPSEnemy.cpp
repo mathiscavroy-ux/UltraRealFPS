@@ -2,6 +2,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Engine/StaticMesh.h"
@@ -77,11 +78,29 @@ AURFPSEnemy::AURFPSEnemy()
     MuzzleFlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("EnemyMuzzleFlash"));
     MuzzleFlashLight->SetupAttachment(WeaponBarrelMesh);
     MuzzleFlashLight->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
-    MuzzleFlashLight->SetIntensity(2800.f);
-    MuzzleFlashLight->SetAttenuationRadius(220.f);
-    MuzzleFlashLight->SetLightColor(FLinearColor(1.f, 0.35f, 0.08f));
+    MuzzleFlashLight->SetIntensity(3000.f);
+    MuzzleFlashLight->SetAttenuationRadius(235.f);
+    MuzzleFlashLight->SetLightColor(FLinearColor(1.f, 0.40f, 0.10f));
     MuzzleFlashLight->SetCastShadows(false);
+    MuzzleFlashLight->SetUseInverseSquaredFalloff(true);
+    MuzzleFlashLight->SetSourceRadius(1.5f);
+    MuzzleFlashLight->SetSoftSourceRadius(3.5f);
     MuzzleFlashLight->SetVisibility(false);
+
+    MuzzleFlashCone = CreateDefaultSubobject<USpotLightComponent>(TEXT("EnemyMuzzleFlashCone"));
+    MuzzleFlashCone->SetupAttachment(WeaponBarrelMesh);
+    MuzzleFlashCone->SetRelativeLocation(FVector(0.f, 0.f, 54.f));
+    MuzzleFlashCone->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
+    MuzzleFlashCone->SetIntensity(4400.f);
+    MuzzleFlashCone->SetAttenuationRadius(360.f);
+    MuzzleFlashCone->SetInnerConeAngle(10.f);
+    MuzzleFlashCone->SetOuterConeAngle(30.f);
+    MuzzleFlashCone->SetLightColor(FLinearColor(1.f, 0.46f, 0.14f));
+    MuzzleFlashCone->SetCastShadows(false);
+    MuzzleFlashCone->SetUseInverseSquaredFalloff(true);
+    MuzzleFlashCone->SetSourceRadius(1.0f);
+    MuzzleFlashCone->SetSoftSourceRadius(2.5f);
+    MuzzleFlashCone->SetVisibility(false);
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
@@ -369,7 +388,11 @@ void AURFPSEnemy::Tick(float DeltaSeconds)
     if (MuzzleFlashTimer > 0.f)
     {
         MuzzleFlashTimer -= DeltaSeconds;
-        if (MuzzleFlashTimer <= 0.f && MuzzleFlashLight) MuzzleFlashLight->SetVisibility(false);
+        if (MuzzleFlashTimer <= 0.f)
+        {
+            if (MuzzleFlashLight) MuzzleFlashLight->SetVisibility(false);
+            if (MuzzleFlashCone) MuzzleFlashCone->SetVisibility(false);
+        }
     }
 
     WeaponKick = FMath::FInterpTo(WeaponKick, 0.f, DeltaSeconds, 16.f);
@@ -714,10 +737,30 @@ void AURFPSEnemy::FireOneShot(APawn* Player)
     URFPSAudio::PlayGunshot(this, Start, true, RoleVolume, FMath::FRandRange(0.94f, 1.05f));
 
     WeaponKick = 1.f;
-    if (MuzzleFlashLight)
+    if (MuzzleFlashLight || MuzzleFlashCone)
     {
-        MuzzleFlashLight->SetVisibility(true);
-        MuzzleFlashTimer = 0.045f;
+        const FLinearColor FlashColor(
+            1.f,
+            FMath::FRandRange(0.36f, 0.49f),
+            FMath::FRandRange(0.08f, 0.16f),
+            1.f);
+
+        if (MuzzleFlashLight)
+        {
+            MuzzleFlashLight->SetLightColor(FlashColor);
+            MuzzleFlashLight->SetIntensity(FMath::FRandRange(2500.f, 4300.f));
+            MuzzleFlashLight->SetAttenuationRadius(FMath::FRandRange(190.f, 265.f));
+            MuzzleFlashLight->SetVisibility(true);
+        }
+        if (MuzzleFlashCone)
+        {
+            MuzzleFlashCone->SetLightColor(FlashColor);
+            MuzzleFlashCone->SetIntensity(FMath::FRandRange(3600.f, 5900.f));
+            MuzzleFlashCone->SetAttenuationRadius(FMath::FRandRange(300.f, 410.f));
+            MuzzleFlashCone->SetOuterConeAngle(FMath::FRandRange(25.f, 33.f));
+            MuzzleFlashCone->SetVisibility(true);
+        }
+        MuzzleFlashTimer = FMath::FRandRange(0.020f, 0.034f);
     }
 }
 
@@ -875,6 +918,7 @@ float AURFPSEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
         BodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         HeadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         if (MuzzleFlashLight) MuzzleFlashLight->SetVisibility(false);
+        if (MuzzleFlashCone) MuzzleFlashCone->SetVisibility(false);
         SetActorRotation(GetActorRotation() + FRotator(0.f, 0.f, FMath::RandBool() ? 82.f : -82.f));
         SetLifeSpan(6.f);
 
