@@ -1,5 +1,14 @@
 # UltraRealFPS — Patch Notes
 
+## Hotfix 2 — Import Interchange sans faux échec
+- le log de test confirme que la compilation C++ réussit ;
+- les 11 GLB sont bien traités par Interchange ;
+- suppression des appels `load_asset()` sur des chemins absents qui écrivaient artificiellement 11 erreurs dans le log au premier import ;
+- vérification préalable avec `does_asset_exist()` avant chargement ;
+- validation finale par Asset Registry **ou** présence du fichier `.uasset` ;
+- ajout d'un marqueur `Saved/ArtFoundationImport.ok` créé uniquement après un import réellement réussi ;
+- `BUILD_AND_RUN.bat` relance donc l'import tant que ce marqueur n'existe pas, même si un ancien `.uasset` partiel est présent.
+
 ## Hotfix import UE 5.8 — 2026-09-27
 - compilation C++ validee sur la machine de test ;
 - correction de la validation Interchange qui cherchait une sentinelle a un chemin trop strict ;
