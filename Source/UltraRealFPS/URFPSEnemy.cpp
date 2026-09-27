@@ -76,8 +76,8 @@ AURFPSEnemy::AURFPSEnemy()
     WeaponBarrelMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
     MuzzleFlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("EnemyMuzzleFlash"));
-    MuzzleFlashLight->SetupAttachment(WeaponBarrelMesh);
-    MuzzleFlashLight->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
+    MuzzleFlashLight->SetupAttachment(GetCapsuleComponent());
+    MuzzleFlashLight->SetRelativeLocation(FVector(72.f, 12.f, 16.f));
     MuzzleFlashLight->SetIntensity(3000.f);
     MuzzleFlashLight->SetAttenuationRadius(235.f);
     MuzzleFlashLight->SetLightColor(FLinearColor(1.f, 0.40f, 0.10f));
@@ -88,9 +88,9 @@ AURFPSEnemy::AURFPSEnemy()
     MuzzleFlashLight->SetVisibility(false);
 
     MuzzleFlashCone = CreateDefaultSubobject<USpotLightComponent>(TEXT("EnemyMuzzleFlashCone"));
-    MuzzleFlashCone->SetupAttachment(WeaponBarrelMesh);
-    MuzzleFlashCone->SetRelativeLocation(FVector(0.f, 0.f, 54.f));
-    MuzzleFlashCone->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
+    MuzzleFlashCone->SetupAttachment(GetCapsuleComponent());
+    MuzzleFlashCone->SetRelativeLocation(FVector(74.f, 12.f, 16.f));
+    MuzzleFlashCone->SetRelativeRotation(FRotator::ZeroRotator);
     MuzzleFlashCone->SetIntensity(4400.f);
     MuzzleFlashCone->SetAttenuationRadius(360.f);
     MuzzleFlashCone->SetInnerConeAngle(10.f);
