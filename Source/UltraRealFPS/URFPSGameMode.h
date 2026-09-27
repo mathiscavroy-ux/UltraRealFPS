@@ -60,6 +60,9 @@ private:
     void BuildLighting();
     void CreateMaterials();
     void BuildArena();
+    void BuildIndustrialArchitecturePass();
+    void SpawnWorldLabel(const FVector& Location, const FRotator& Rotation, const FString& Label,
+        const FColor& Color, float WorldSize = 42.f);
     void SpawnBlock(const FVector& Location, const FVector& Scale, const FRotator& Rotation = FRotator::ZeroRotator,
         bool bCastShadow = true, EBlockStyle Style = EBlockStyle::Wall);
     AStaticMeshActor* SpawnTaggedBlock(const FVector& Location, const FVector& Scale, FName Tag,
