@@ -1,5 +1,33 @@
 # UltraRealFPS — Changelog
 
+## Visual Impact & Environment Pass — en test
+
+### Impacts / feedback balistique
+- marque d'impact aplatie et orientée sur la normale de surface ;
+- micro-débris procéduraux sans asset externe : fragments béton, éclats bois, étincelles métal ;
+- ricochets métal plus lumineux et plus nerveux ;
+- variantes légères de taille/couleur/intensité pour casser la répétition ;
+- impacts secondaires de grenade sur les surfaces proches, sans spam audio.
+
+### Muzzle flash / explosion
+- flash joueur et IA composé d'une lumière locale + d'un cône directionnel ;
+- durée raccourcie et variation par tir pour supprimer l'effet "ampoule orange" ;
+- falloff inverse-square et source radius configurés sur les lumières transitoires ;
+- explosion de grenade plus brève/énergétique visuellement, avec traces de fragmentation autour du point d'explosion.
+
+### Environnement
+- helpers de détails non-collisionnants pour ne pas créer de pièges de gameplay ;
+- poutres/ribs dans l'entrepôt, renforts, encadrements de portes, plinthes, luminaire simple ;
+- tuyaux/cable tray dans la maintenance ;
+- marquages industriels supplémentaires dans la voie centrale ;
+- éclairage intérieur sécurité/maintenance passé sur un falloff plus physique.
+
+### Validation
+- branche GitHub : `dev/visual-impact-environment-pass` ;
+- contrôles statiques C++ effectués ;
+- compilation/runtime UE 5.8 à valider sur le PC de test avant merge dans `main`.
+
+
 ## Presentation Realism Pass — en test
 
 ### Viewmodel / sensation d'arme
