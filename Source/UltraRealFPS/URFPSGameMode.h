@@ -46,6 +46,9 @@ private:
         Wood,
         Metal,
         Dark,
+        Asphalt,
+        ConcreteLight,
+        PaintBlue,
         Accent,
         Hazard,
         SupplyAmmo,
@@ -57,6 +60,9 @@ private:
     void BuildLighting();
     void CreateMaterials();
     void BuildArena();
+    void BuildIndustrialArchitecturePass();
+    void SpawnWorldLabel(const FVector& Location, const FRotator& Rotation, const FString& Label,
+        const FColor& Color, float WorldSize = 42.f);
     void SpawnBlock(const FVector& Location, const FVector& Scale, const FRotator& Rotation = FRotator::ZeroRotator,
         bool bCastShadow = true, EBlockStyle Style = EBlockStyle::Wall);
     AStaticMeshActor* SpawnTaggedBlock(const FVector& Location, const FVector& Scale, FName Tag,
@@ -86,6 +92,9 @@ private:
     UPROPERTY() UMaterialInstanceDynamic* WoodMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* MetalMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* DarkMaterial = nullptr;
+    UPROPERTY() UMaterialInstanceDynamic* AsphaltMaterial = nullptr;
+    UPROPERTY() UMaterialInstanceDynamic* ConcreteLightMaterial = nullptr;
+    UPROPERTY() UMaterialInstanceDynamic* PaintBlueMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* AccentMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* HazardMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* AmmoMaterial = nullptr;
