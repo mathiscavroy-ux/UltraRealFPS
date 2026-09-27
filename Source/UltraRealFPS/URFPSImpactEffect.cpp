@@ -169,6 +169,7 @@ void AURFPSImpactEffect::SpawnSurfaceDebris()
 
         Debris->SetMobility(EComponentMobility::Movable);
         Debris->SetupAttachment(RootComponent);
+        Debris->SetAbsolute(true, true, true);
         Debris->SetStaticMesh(DebrisMesh);
         Debris->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         Debris->SetCastShadow(false);
