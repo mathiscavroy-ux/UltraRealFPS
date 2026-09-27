@@ -10,11 +10,13 @@
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 #include "URFPSAudio.h"
 #include "URFPSCharacter.h"
 #include "URFPSEnemy.h"
+#include "URFPSImpactEffect.h"
 
 AURFPSGrenade::AURFPSGrenade()
 {
@@ -37,9 +39,12 @@ AURFPSGrenade::AURFPSGrenade()
     ExplosionLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ExplosionLight"));
     ExplosionLight->SetupAttachment(CollisionSphere);
     ExplosionLight->SetIntensity(0.f);
-    ExplosionLight->SetAttenuationRadius(1050.f);
-    ExplosionLight->SetLightColor(FLinearColor(1.f, 0.34f, 0.06f));
+    ExplosionLight->SetAttenuationRadius(1150.f);
+    ExplosionLight->SetLightColor(FLinearColor(1.f, 0.38f, 0.08f));
     ExplosionLight->SetCastShadows(false);
+    ExplosionLight->SetUseInverseSquaredFalloff(true);
+    ExplosionLight->SetSourceRadius(18.f);
+    ExplosionLight->SetSoftSourceRadius(38.f);
     ExplosionLight->SetVisibility(false);
 
     ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
@@ -159,10 +164,47 @@ void AURFPSGrenade::Explode()
     if (ExplosionLight)
     {
         ExplosionLight->SetVisibility(true);
-        ExplosionLight->SetIntensity(72000.f);
+        ExplosionLight->SetLightColor(FLinearColor(
+            1.f,
+            FMath::FRandRange(0.31f, 0.43f),
+            FMath::FRandRange(0.045f, 0.10f),
+            1.f));
+        ExplosionLight->SetIntensity(FMath::FRandRange(76000.f, 94000.f));
+        ExplosionLight->SetAttenuationRadius(FMath::FRandRange(980.f, 1280.f));
     }
 
     URFPSAudio::PlaySpatial(this, EURFPSAudioEvent::GrenadeExplosion, GetActorLocation(), 1.0f, FMath::FRandRange(0.97f, 1.03f));
+
+    // Cast a small number of fragmentation probes into nearby geometry. They create silent,
+    // material-aware impact scars/debris without turning the explosion into an audio spam burst.
+    FCollisionQueryParams FragmentParams(SCENE_QUERY_STAT(GrenadeFragmentVisuals), false, this);
+    FragmentParams.AddIgnoredActor(this);
+    if (DamageCauserActor) FragmentParams.AddIgnoredActor(DamageCauserActor);
+    FragmentParams.bReturnPhysicalMaterial = true;
+
+    const FVector BlastOrigin = GetActorLocation() + FVector(0.f, 0.f, 18.f);
+    for (int32 FragmentIndex = 0; FragmentIndex < 9; ++FragmentIndex)
+    {
+        FVector FragmentDirection = FMath::VRand();
+        FragmentDirection.Z = FMath::Clamp(FragmentDirection.Z + 0.18f, -0.55f, 1.f);
+        FragmentDirection = FragmentDirection.GetSafeNormal();
+
+        FHitResult FragmentHit;
+        const FVector FragmentEnd = BlastOrigin + FragmentDirection * FMath::FRandRange(260.f, 520.f);
+        if (!GetWorld()->LineTraceSingleByChannel(FragmentHit, BlastOrigin, FragmentEnd, ECC_Visibility, FragmentParams))
+        {
+            continue;
+        }
+
+        const EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(FragmentHit);
+        if (AURFPSImpactEffect* Impact = GetWorld()->SpawnActor<AURFPSImpactEffect>(
+            AURFPSImpactEffect::StaticClass(),
+            FragmentHit.ImpactPoint + FragmentHit.ImpactNormal * 1.5f,
+            FragmentHit.ImpactNormal.Rotation()))
+        {
+            Impact->InitializeImpact(FragmentHit.ImpactNormal, false, SurfaceType, false, false);
+        }
+    }
 
     if (AURFPSCharacter* Player = Cast<AURFPSCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0)))
     {
@@ -194,5 +236,5 @@ void AURFPSGrenade::Explode()
         }
     }
 
-    SetLifeSpan(0.18f);
+    SetLifeSpan(0.72f);
 }
