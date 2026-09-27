@@ -6,6 +6,7 @@
 
 class UStaticMeshComponent;
 class UPointLightComponent;
+class USpotLightComponent;
 class UMaterialInstanceDynamic;
 
 enum class EURFPSEnemyRole : uint8
@@ -48,6 +49,7 @@ private:
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponMesh;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponBarrelMesh;
     UPROPERTY(VisibleAnywhere) UPointLightComponent* MuzzleFlashLight;
+    UPROPERTY(VisibleAnywhere) USpotLightComponent* MuzzleFlashCone;
     UPROPERTY() UMaterialInstanceDynamic* UniformMaterial;
     UPROPERTY() UMaterialInstanceDynamic* GearMaterial;
     UPROPERTY() UMaterialInstanceDynamic* WeaponMaterial;
