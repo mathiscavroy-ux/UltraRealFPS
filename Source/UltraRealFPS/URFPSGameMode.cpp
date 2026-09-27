@@ -2,6 +2,7 @@
 
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/SkyLightComponent.h"
@@ -236,40 +237,55 @@ void AURFPSGameMode::SpawnCylinder(const FVector& Location, const FVector& Scale
     Prop->SetActorScale3D(Scale);
 }
 
+UInstancedStaticMeshComponent* AURFPSGameMode::GetOrCreateDetailISM(EBlockStyle Style, bool bCylinder, bool bCastShadow)
+{
+    const uint32 StyleBits = static_cast<uint32>(Style);
+    const uint32 Key = StyleBits | (bCylinder ? (1u << 8) : 0u) | (bCastShadow ? (1u << 9) : 0u);
+
+    if (UInstancedStaticMeshComponent** Existing = DetailISMCache.Find(Key))
+    {
+        return *Existing;
+    }
+
+    UStaticMesh* MeshAsset = bCylinder ? CylinderMesh : CubeMesh;
+    if (!MeshAsset) return nullptr;
+
+    const FName ComponentName(*FString::Printf(TEXT("DetailISM_%u"), Key));
+    UInstancedStaticMeshComponent* ISM = NewObject<UInstancedStaticMeshComponent>(this, ComponentName);
+    if (!ISM) return nullptr;
+
+    ISM->SetMobility(EComponentMobility::Movable);
+    ISM->SetStaticMesh(MeshAsset);
+    ISM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    ISM->SetGenerateOverlapEvents(false);
+    ISM->SetCastShadow(bCastShadow);
+    if (UMaterialInterface* Material = GetMaterialForStyle(Style))
+    {
+        ISM->SetMaterial(0, Material);
+    }
+    ISM->RegisterComponent();
+
+    DetailISMComponents.Add(ISM);
+    DetailISMCache.Add(Key, ISM);
+    return ISM;
+}
+
 void AURFPSGameMode::SpawnDetailBlock(const FVector& Location, const FVector& Scale, const FRotator& Rotation,
     EBlockStyle Style, bool bCastShadow)
 {
-    if (!CubeMesh || !GetWorld()) return;
-
-    AStaticMeshActor* Detail = GetWorld()->SpawnActor<AStaticMeshActor>(Location, Rotation);
-    if (!Detail) return;
-
-    UStaticMeshComponent* Mesh = Detail->GetStaticMeshComponent();
-    Mesh->SetMobility(EComponentMobility::Movable);
-    Mesh->SetStaticMesh(CubeMesh);
-    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    Mesh->SetGenerateOverlapEvents(false);
-    Mesh->SetCastShadow(bCastShadow);
-    if (UMaterialInterface* Material = GetMaterialForStyle(Style)) Mesh->SetMaterial(0, Material);
-    Detail->SetActorScale3D(Scale);
+    if (UInstancedStaticMeshComponent* ISM = GetOrCreateDetailISM(Style, false, bCastShadow))
+    {
+        ISM->AddInstance(FTransform(Rotation, Location, Scale), true);
+    }
 }
 
 void AURFPSGameMode::SpawnDetailCylinder(const FVector& Location, const FVector& Scale, const FRotator& Rotation,
     EBlockStyle Style, bool bCastShadow)
 {
-    if (!CylinderMesh || !GetWorld()) return;
-
-    AStaticMeshActor* Detail = GetWorld()->SpawnActor<AStaticMeshActor>(Location, Rotation);
-    if (!Detail) return;
-
-    UStaticMeshComponent* Mesh = Detail->GetStaticMeshComponent();
-    Mesh->SetMobility(EComponentMobility::Movable);
-    Mesh->SetStaticMesh(CylinderMesh);
-    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    Mesh->SetGenerateOverlapEvents(false);
-    Mesh->SetCastShadow(bCastShadow);
-    if (UMaterialInterface* Material = GetMaterialForStyle(Style)) Mesh->SetMaterial(0, Material);
-    Detail->SetActorScale3D(Scale);
+    if (UInstancedStaticMeshComponent* ISM = GetOrCreateDetailISM(Style, true, bCastShadow))
+    {
+        ISM->AddInstance(FTransform(Rotation, Location, Scale), true);
+    }
 }
 
 AURFPSDoor* AURFPSGameMode::SpawnDoor(const FVector& Location, const FRotator& Rotation)
@@ -511,6 +527,100 @@ void AURFPSGameMode::BuildArena()
             FRotator(0.f, 12.f, 0.f), EBlockStyle::Hazard, false);
         SpawnDetailBlock(FVector(EdgeX, -260.f, -94.f), FVector(1.7f, 0.035f, 0.018f),
             FRotator(0.f, -12.f, 0.f), EBlockStyle::Hazard, false);
+    }
+
+    // Environment graphics pass: modular industrial dressing. Repeated pieces now use ISMs,
+    // so the compound can carry more silhouette detail without one Actor per decorative mesh.
+
+    // East warehouse: roof purlins, wall columns and high clerestory panels.
+    for (int32 BeamIndex = 0; BeamIndex < 8; ++BeamIndex)
+    {
+        const float BeamX = 650.f + static_cast<float>(BeamIndex) * 390.f;
+        SpawnDetailBlock(FVector(BeamX, 1850.f, 315.f), FVector(0.055f, 14.6f, 0.07f),
+            FRotator::ZeroRotator, EBlockStyle::Metal, true);
+    }
+    for (int32 ColumnIndex = 0; ColumnIndex < 6; ++ColumnIndex)
+    {
+        const float ColumnY = 520.f + static_cast<float>(ColumnIndex) * 540.f;
+        SpawnDetailBlock(FVector(3485.f, ColumnY, 70.f), FVector(0.10f, 0.10f, 3.2f),
+            FRotator::ZeroRotator, EBlockStyle::Metal, true);
+        SpawnDetailBlock(FVector(415.f, ColumnY, 70.f), FVector(0.10f, 0.10f, 3.2f),
+            FRotator::ZeroRotator, EBlockStyle::Metal, true);
+    }
+    for (int32 WindowIndex = 0; WindowIndex < 7; ++WindowIndex)
+    {
+        const float WindowX = 720.f + static_cast<float>(WindowIndex) * 410.f;
+        SpawnDetailBlock(FVector(WindowX, 3358.f, 210.f), FVector(1.35f, 0.045f, 0.46f),
+            FRotator::ZeroRotator, EBlockStyle::Accent, false);
+    }
+
+    // West shoot-house: door frames and horizontal wall trims make rooms readable at a glance.
+    const TArray<FVector> ShootHouseFrameCenters =
+    {
+        FVector(-1452.f, 1680.f, 45.f), FVector(-1452.f, 2420.f, 45.f),
+        FVector(-3052.f, 1720.f, 45.f), FVector(-3052.f, 2380.f, 45.f),
+        FVector(-3702.f, 2050.f, 45.f)
+    };
+    for (const FVector& FrameCenter : ShootHouseFrameCenters)
+    {
+        SpawnDetailBlock(FrameCenter + FVector(0.f, -68.f, 0.f), FVector(0.055f, 0.055f, 2.45f),
+            FRotator::ZeroRotator, EBlockStyle::Metal, true);
+        SpawnDetailBlock(FrameCenter + FVector(0.f, 68.f, 0.f), FVector(0.055f, 0.055f, 2.45f),
+            FRotator::ZeroRotator, EBlockStyle::Metal, true);
+        SpawnDetailBlock(FrameCenter + FVector(0.f, 0.f, 225.f), FVector(0.055f, 0.72f, 0.055f),
+            FRotator::ZeroRotator, EBlockStyle::Metal, true);
+    }
+    SpawnDetailBlock(FVector(-3000.f, 1065.f, -82.f), FVector(14.8f, 0.055f, 0.045f),
+        FRotator::ZeroRotator, EBlockStyle::Accent, false);
+    SpawnDetailBlock(FVector(-3000.f, 3035.f, -82.f), FVector(14.8f, 0.055f, 0.045f),
+        FRotator::ZeroRotator, EBlockStyle::Accent, false);
+
+    // South service yard: two container-like masses with ribs and door seams.
+    SpawnBlock(FVector(3000.f, -4200.f, -10.f), FVector(3.0f, 1.18f, 1.45f),
+        FRotator(0.f, 5.f, 0.f), true, EBlockStyle::Dark);
+    SpawnBlock(FVector(-3150.f, -4150.f, -10.f), FVector(3.2f, 1.18f, 1.45f),
+        FRotator(0.f, -7.f, 0.f), true, EBlockStyle::Dark);
+    for (int32 RibIndex = -3; RibIndex <= 3; ++RibIndex)
+    {
+        const float OffsetX = static_cast<float>(RibIndex) * 78.f;
+        SpawnDetailBlock(FVector(3000.f + OffsetX, -4083.f, -5.f), FVector(0.035f, 0.045f, 1.28f),
+            FRotator(0.f, 5.f, 0.f), EBlockStyle::Accent, false);
+        SpawnDetailBlock(FVector(-3150.f + OffsetX, -4033.f, -5.f), FVector(0.035f, 0.045f, 1.28f),
+            FRotator(0.f, -7.f, 0.f), EBlockStyle::Metal, false);
+    }
+
+    // Perimeter service lamps. Geometry is decorative/non-blocking; point lights provide
+    // readable landmarks without changing combat collision.
+    const TArray<FVector> LampPositions =
+    {
+        FVector(-4700.f, -3500.f, 260.f), FVector(-4700.f, 3300.f, 260.f),
+        FVector(4700.f, -3200.f, 260.f), FVector(4700.f, 3200.f, 260.f),
+        FVector(0.f, 4950.f, 260.f)
+    };
+    for (int32 LampIndex = 0; LampIndex < LampPositions.Num(); ++LampIndex)
+    {
+        const FVector Lamp = LampPositions[LampIndex];
+        SpawnDetailCylinder(Lamp - FVector(0.f, 0.f, 165.f), FVector(0.045f, 0.045f, 2.2f),
+            FRotator::ZeroRotator, EBlockStyle::Metal, true);
+        SpawnDetailBlock(Lamp, FVector(0.48f, 0.18f, 0.08f),
+            FRotator::ZeroRotator, EBlockStyle::Cover, true);
+
+        if (APointLight* YardLight = GetWorld()->SpawnActor<APointLight>(Lamp - FVector(0.f, 0.f, 18.f), FRotator::ZeroRotator))
+        {
+            if (UPointLightComponent* LightComponent = Cast<UPointLightComponent>(YardLight->GetLightComponent()))
+            {
+                LightComponent->SetMobility(EComponentMobility::Movable);
+                LightComponent->SetIntensity(LampIndex % 2 == 0 ? 1750.f : 1450.f);
+                LightComponent->SetAttenuationRadius(920.f);
+                LightComponent->SetLightColor(LampIndex % 2 == 0
+                    ? FLinearColor(0.78f, 0.86f, 1.0f)
+                    : FLinearColor(1.0f, 0.79f, 0.56f));
+                LightComponent->SetUseInverseSquaredFalloff(true);
+                LightComponent->SetSourceRadius(12.f);
+                LightComponent->SetSoftSourceRadius(36.f);
+                LightComponent->SetCastShadows(false);
+            }
+        }
     }
 
     // Ballistic validation lane in the south perimeter. The three panels intentionally
