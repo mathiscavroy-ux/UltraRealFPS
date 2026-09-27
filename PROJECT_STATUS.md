@@ -42,8 +42,13 @@
 4. Beaucoup d'acteurs procéduraux séparés : acceptable sur la map actuelle, à remplacer plus tard par instancing / niveaux construits.
 5. Le multijoueur n'est pas prévu dans les systèmes actuels ; ne pas l'ajouter avant stabilisation du solo.
 
+## Développement actuel
+- branche : `dev/visual-impact-environment-pass` ;
+- priorité : impacts, muzzle flash, explosion, micro-détails environnementaux et éclairage ;
+- pas encore mergé dans `main` : validation UE 5.8 requise.
+
 ## Priorités recommandées après cette update
-1. Valider la branche `dev/presentation-realism-pass` sous UE 5.8 puis merger si stable.
+1. Valider la branche `dev/visual-impact-environment-pass` sous UE 5.8 puis merger si stable.
 2. Construire le pipeline de vrais assets audio/armes (Git LFS + imports reproductibles).
 3. Remplacer progressivement l'audio procédural par des enregistrements/MetaSounds sans changer les appels gameplay.
 4. Remplacer l'arme placeholder par un vrai viewmodel squelettique + animations.

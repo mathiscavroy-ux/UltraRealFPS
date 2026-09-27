@@ -236,6 +236,42 @@ void AURFPSGameMode::SpawnCylinder(const FVector& Location, const FVector& Scale
     Prop->SetActorScale3D(Scale);
 }
 
+void AURFPSGameMode::SpawnDetailBlock(const FVector& Location, const FVector& Scale, const FRotator& Rotation,
+    EBlockStyle Style, bool bCastShadow)
+{
+    if (!CubeMesh || !GetWorld()) return;
+
+    AStaticMeshActor* Detail = GetWorld()->SpawnActor<AStaticMeshActor>(Location, Rotation);
+    if (!Detail) return;
+
+    UStaticMeshComponent* Mesh = Detail->GetStaticMeshComponent();
+    Mesh->SetMobility(EComponentMobility::Movable);
+    Mesh->SetStaticMesh(CubeMesh);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Mesh->SetGenerateOverlapEvents(false);
+    Mesh->SetCastShadow(bCastShadow);
+    if (UMaterialInterface* Material = GetMaterialForStyle(Style)) Mesh->SetMaterial(0, Material);
+    Detail->SetActorScale3D(Scale);
+}
+
+void AURFPSGameMode::SpawnDetailCylinder(const FVector& Location, const FVector& Scale, const FRotator& Rotation,
+    EBlockStyle Style, bool bCastShadow)
+{
+    if (!CylinderMesh || !GetWorld()) return;
+
+    AStaticMeshActor* Detail = GetWorld()->SpawnActor<AStaticMeshActor>(Location, Rotation);
+    if (!Detail) return;
+
+    UStaticMeshComponent* Mesh = Detail->GetStaticMeshComponent();
+    Mesh->SetMobility(EComponentMobility::Movable);
+    Mesh->SetStaticMesh(CylinderMesh);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Mesh->SetGenerateOverlapEvents(false);
+    Mesh->SetCastShadow(bCastShadow);
+    if (UMaterialInterface* Material = GetMaterialForStyle(Style)) Mesh->SetMaterial(0, Material);
+    Detail->SetActorScale3D(Scale);
+}
+
 AURFPSDoor* AURFPSGameMode::SpawnDoor(const FVector& Location, const FRotator& Rotation)
 {
     if (!GetWorld()) return nullptr;
@@ -394,9 +430,12 @@ void AURFPSGameMode::BuildArena()
         if (UPointLightComponent* LightComponent = Cast<UPointLightComponent>(OfficeLight->GetLightComponent()))
         {
             LightComponent->SetMobility(EComponentMobility::Movable);
-            LightComponent->SetIntensity(2600.f);
-            LightComponent->SetAttenuationRadius(820.f);
+            LightComponent->SetIntensity(2800.f);
+            LightComponent->SetAttenuationRadius(860.f);
             LightComponent->SetLightColor(FLinearColor(1.f, 0.72f, 0.48f));
+            LightComponent->SetUseInverseSquaredFalloff(true);
+            LightComponent->SetSourceRadius(18.f);
+            LightComponent->SetSoftSourceRadius(52.f);
             LightComponent->SetCastShadows(true);
         }
     }
@@ -416,14 +455,63 @@ void AURFPSGameMode::BuildArena()
         if (UPointLightComponent* LightComponent = Cast<UPointLightComponent>(MaintenanceLight->GetLightComponent()))
         {
             LightComponent->SetMobility(EComponentMobility::Movable);
-            LightComponent->SetIntensity(1900.f);
-            LightComponent->SetAttenuationRadius(720.f);
+            LightComponent->SetIntensity(2100.f);
+            LightComponent->SetAttenuationRadius(760.f);
             LightComponent->SetLightColor(FLinearColor(0.62f, 0.76f, 1.f));
+            LightComponent->SetUseInverseSquaredFalloff(true);
+            LightComponent->SetSourceRadius(15.f);
+            LightComponent->SetSoftSourceRadius(44.f);
             LightComponent->SetCastShadows(true);
         }
     }
     SpawnCylinder(FVector(4630.f, 4220.f, -50.f), FVector(0.42f, 0.42f, 1.0f), FRotator::ZeroRotator, EBlockStyle::Metal);
     SpawnCylinder(FVector(4550.f, 4300.f, -50.f), FVector(0.42f, 0.42f, 1.0f), FRotator::ZeroRotator, EBlockStyle::Metal);
+
+    // Visual-impact pass: low-cost structural detail. These pieces have no collision, so
+    // they break up the "large grey boxes" silhouette without creating invisible gameplay snags.
+    // East warehouse roof ribs and wall braces.
+    for (int32 RibIndex = 0; RibIndex < 5; ++RibIndex)
+    {
+        const float RibY = 700.f + static_cast<float>(RibIndex) * 640.f;
+        SpawnDetailBlock(FVector(1950.f, RibY, 245.f), FVector(15.2f, 0.055f, 0.055f),
+            FRotator::ZeroRotator, EBlockStyle::Metal, true);
+    }
+    SpawnDetailBlock(FVector(520.f, 1820.f, 150.f), FVector(0.07f, 14.2f, 0.07f),
+        FRotator::ZeroRotator, EBlockStyle::Accent, false);
+    SpawnDetailBlock(FVector(3420.f, 1820.f, 150.f), FVector(0.07f, 14.2f, 0.07f),
+        FRotator::ZeroRotator, EBlockStyle::Accent, false);
+
+    // Security office frame, skirting and a simple ceiling fixture.
+    SpawnDetailBlock(FVector(4138.f, -3612.f, 35.f), FVector(0.055f, 0.09f, 2.55f),
+        FRotator::ZeroRotator, EBlockStyle::Metal, true);
+    SpawnDetailBlock(FVector(4262.f, -3612.f, 35.f), FVector(0.055f, 0.09f, 2.55f),
+        FRotator::ZeroRotator, EBlockStyle::Metal, true);
+    SpawnDetailBlock(FVector(4200.f, -3612.f, 273.f), FVector(0.68f, 0.09f, 0.055f),
+        FRotator::ZeroRotator, EBlockStyle::Metal, true);
+    SpawnDetailBlock(FVector(4200.f, -4060.f, 235.f), FVector(1.35f, 0.16f, 0.055f),
+        FRotator::ZeroRotator, EBlockStyle::Cover, false);
+    SpawnDetailBlock(FVector(4200.f, -4500.f, -88.f), FVector(5.1f, 0.045f, 0.045f),
+        FRotator::ZeroRotator, EBlockStyle::Accent, false);
+    SpawnDetailBlock(FVector(3668.f, -4060.f, -88.f), FVector(0.045f, 4.1f, 0.045f),
+        FRotator::ZeroRotator, EBlockStyle::Accent, false);
+
+    // Maintenance room service pipes and cable tray.
+    SpawnDetailCylinder(FVector(4240.f, 4240.f, 205.f), FVector(0.050f, 0.050f, 2.7f),
+        FRotator(0.f, 90.f, 0.f), EBlockStyle::Metal, true);
+    SpawnDetailCylinder(FVector(4240.f, 4320.f, 185.f), FVector(0.032f, 0.032f, 2.7f),
+        FRotator(0.f, 90.f, 0.f), EBlockStyle::Accent, false);
+    SpawnDetailBlock(FVector(4460.f, 4435.f, 218.f), FVector(3.3f, 0.10f, 0.055f),
+        FRotator::ZeroRotator, EBlockStyle::Dark, true);
+
+    // Repeated floor edge markers make the central route read as an industrial service lane.
+    for (int32 EdgeIndex = -4; EdgeIndex <= 4; ++EdgeIndex)
+    {
+        const float EdgeX = static_cast<float>(EdgeIndex) * 520.f;
+        SpawnDetailBlock(FVector(EdgeX, -600.f, -94.f), FVector(1.7f, 0.035f, 0.018f),
+            FRotator(0.f, 12.f, 0.f), EBlockStyle::Hazard, false);
+        SpawnDetailBlock(FVector(EdgeX, -260.f, -94.f), FVector(1.7f, 0.035f, 0.018f),
+            FRotator(0.f, -12.f, 0.f), EBlockStyle::Hazard, false);
+    }
 
     // Ballistic validation lane in the south perimeter. The three panels intentionally
     // use different physical surfaces so penetration / ricochet behavior can be checked

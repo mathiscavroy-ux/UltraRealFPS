@@ -131,13 +131,31 @@ AURFPSCharacter::AURFPSCharacter()
     Flashlight->SetCastShadows(true);
 
     MuzzleFlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("MuzzleFlashLight"));
-    MuzzleFlashLight->SetupAttachment(WeaponMuzzle);
-    MuzzleFlashLight->SetRelativeLocation(FVector(8.f, 0.f, 0.f));
-    MuzzleFlashLight->SetIntensity(4200.f);
-    MuzzleFlashLight->SetAttenuationRadius(260.f);
-    MuzzleFlashLight->SetLightColor(FLinearColor(1.f, 0.42f, 0.12f));
+    MuzzleFlashLight->SetupAttachment(WeaponRoot);
+    MuzzleFlashLight->SetRelativeLocation(FVector(80.f, 0.f, -0.1f));
+    MuzzleFlashLight->SetIntensity(4600.f);
+    MuzzleFlashLight->SetAttenuationRadius(285.f);
+    MuzzleFlashLight->SetLightColor(FLinearColor(1.f, 0.46f, 0.15f));
     MuzzleFlashLight->SetCastShadows(false);
+    MuzzleFlashLight->SetUseInverseSquaredFalloff(true);
+    MuzzleFlashLight->SetSourceRadius(2.0f);
+    MuzzleFlashLight->SetSoftSourceRadius(5.0f);
     MuzzleFlashLight->SetVisibility(false);
+
+    MuzzleFlashCone = CreateDefaultSubobject<USpotLightComponent>(TEXT("MuzzleFlashCone"));
+    MuzzleFlashCone->SetupAttachment(WeaponRoot);
+    MuzzleFlashCone->SetRelativeLocation(FVector(82.f, 0.f, -0.1f));
+    MuzzleFlashCone->SetRelativeRotation(FRotator::ZeroRotator);
+    MuzzleFlashCone->SetIntensity(6500.f);
+    MuzzleFlashCone->SetAttenuationRadius(430.f);
+    MuzzleFlashCone->SetInnerConeAngle(11.f);
+    MuzzleFlashCone->SetOuterConeAngle(31.f);
+    MuzzleFlashCone->SetLightColor(FLinearColor(1.f, 0.50f, 0.18f));
+    MuzzleFlashCone->SetCastShadows(false);
+    MuzzleFlashCone->SetUseInverseSquaredFalloff(true);
+    MuzzleFlashCone->SetSourceRadius(1.0f);
+    MuzzleFlashCone->SetSoftSourceRadius(3.0f);
+    MuzzleFlashCone->SetVisibility(false);
 }
 
 void AURFPSCharacter::BeginPlay()
@@ -548,11 +566,38 @@ void AURFPSCharacter::FireShot()
     SpawnShellCasing();
     NotifyEnemiesOfGunshot(CameraDirection);
 
-    if (MuzzleFlashLight)
+    if (MuzzleFlashLight || MuzzleFlashCone)
     {
-        MuzzleFlashLight->SetVisibility(true);
+        const float FlashEnergy = FMath::FRandRange(0.88f, 1.14f);
+        const FLinearColor FlashColor(
+            1.f,
+            FMath::FRandRange(0.42f, 0.54f),
+            FMath::FRandRange(0.12f, 0.21f),
+            1.f);
+
+        if (MuzzleFlashLight)
+        {
+            MuzzleFlashLight->SetLightColor(FlashColor);
+            MuzzleFlashLight->SetIntensity(FMath::FRandRange(3900.f, 5900.f) * FlashEnergy);
+            MuzzleFlashLight->SetAttenuationRadius(FMath::FRandRange(235.f, 320.f));
+            MuzzleFlashLight->SetVisibility(true);
+        }
+        if (MuzzleFlashCone)
+        {
+            MuzzleFlashCone->SetLightColor(FlashColor);
+            MuzzleFlashCone->SetIntensity(FMath::FRandRange(5600.f, 8200.f) * FlashEnergy);
+            MuzzleFlashCone->SetAttenuationRadius(FMath::FRandRange(360.f, 500.f));
+            MuzzleFlashCone->SetOuterConeAngle(FMath::FRandRange(26.f, 34.f));
+            MuzzleFlashCone->SetVisibility(true);
+        }
+
         GetWorldTimerManager().ClearTimer(MuzzleFlashTimerHandle);
-        GetWorldTimerManager().SetTimer(MuzzleFlashTimerHandle, this, &AURFPSCharacter::HideMuzzleFlash, 0.045f, false);
+        GetWorldTimerManager().SetTimer(
+            MuzzleFlashTimerHandle,
+            this,
+            &AURFPSCharacter::HideMuzzleFlash,
+            FMath::FRandRange(0.020f, 0.032f),
+            false);
     }
 
     if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -815,6 +860,7 @@ void AURFPSCharacter::ExitCursor()
 void AURFPSCharacter::HideMuzzleFlash()
 {
     if (MuzzleFlashLight) MuzzleFlashLight->SetVisibility(false);
+    if (MuzzleFlashCone) MuzzleFlashCone->SetVisibility(false);
 }
 
 void AURFPSCharacter::RespawnSelf()
@@ -857,6 +903,7 @@ void AURFPSCharacter::RespawnSelf()
         Flashlight->SetVisibility(false);
     }
     if (MuzzleFlashLight) MuzzleFlashLight->SetVisibility(false);
+    if (MuzzleFlashCone) MuzzleFlashCone->SetVisibility(false);
 
     SetActorLocationAndRotation(InitialSpawnLocation, InitialSpawnRotation, false, nullptr, ETeleportType::TeleportPhysics);
     GetCharacterMovement()->SetMovementMode(MOVE_Walking);
@@ -1410,6 +1457,7 @@ void AURFPSCharacter::HandleDeath()
         Flashlight->SetVisibility(false);
     }
     if (MuzzleFlashLight) MuzzleFlashLight->SetVisibility(false);
+    if (MuzzleFlashCone) MuzzleFlashCone->SetVisibility(false);
     GetCharacterMovement()->DisableMovement();
 }
 
