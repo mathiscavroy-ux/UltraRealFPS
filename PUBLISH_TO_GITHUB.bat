@@ -6,6 +6,8 @@ REM %~dp0 finit par un antislash. On normalise le dossier pour eviter
 REM qu'un chemin cite termine par \ et perturbe l'analyse de Robocopy.
 for %%I in ("%~dp0.") do set "SOURCE_DIR=%%~fI"
 set "PUBLISH_DIR=%TEMP%\UltraRealFPS_GitPublish"
+set "COMMIT_MESSAGE=Publish tested UltraRealFPS build"
+if not "%~1"=="" set "COMMIT_MESSAGE=%~1"
 
 echo ==========================================================
 echo   UltraRealFPS - publication GitHub de la baseline
@@ -68,7 +70,7 @@ set "DIFFCODE=%ERRORLEVEL%"
 if "%DIFFCODE%"=="0" (
     echo Aucun changement a committer.
 ) else if "%DIFFCODE%"=="1" (
-    git commit -m "Import acoustic CQB baseline"
+    git commit -m "%COMMIT_MESSAGE%"
     if errorlevel 1 goto :gitfail
 ) else (
     echo [ERREUR] Impossible de verifier les changements Git. Code %DIFFCODE%.
