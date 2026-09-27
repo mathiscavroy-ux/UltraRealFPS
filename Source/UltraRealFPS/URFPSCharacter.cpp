@@ -131,8 +131,8 @@ AURFPSCharacter::AURFPSCharacter()
     Flashlight->SetCastShadows(true);
 
     MuzzleFlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("MuzzleFlashLight"));
-    MuzzleFlashLight->SetupAttachment(WeaponMuzzle);
-    MuzzleFlashLight->SetRelativeLocation(FVector(8.f, 0.f, 0.f));
+    MuzzleFlashLight->SetupAttachment(WeaponRoot);
+    MuzzleFlashLight->SetRelativeLocation(FVector(80.f, 0.f, -0.1f));
     MuzzleFlashLight->SetIntensity(4600.f);
     MuzzleFlashLight->SetAttenuationRadius(285.f);
     MuzzleFlashLight->SetLightColor(FLinearColor(1.f, 0.46f, 0.15f));
@@ -143,8 +143,8 @@ AURFPSCharacter::AURFPSCharacter()
     MuzzleFlashLight->SetVisibility(false);
 
     MuzzleFlashCone = CreateDefaultSubobject<USpotLightComponent>(TEXT("MuzzleFlashCone"));
-    MuzzleFlashCone->SetupAttachment(WeaponMuzzle);
-    MuzzleFlashCone->SetRelativeLocation(FVector(10.f, 0.f, 0.f));
+    MuzzleFlashCone->SetupAttachment(WeaponRoot);
+    MuzzleFlashCone->SetRelativeLocation(FVector(82.f, 0.f, -0.1f));
     MuzzleFlashCone->SetRelativeRotation(FRotator::ZeroRotator);
     MuzzleFlashCone->SetIntensity(6500.f);
     MuzzleFlashCone->SetAttenuationRadius(430.f);
