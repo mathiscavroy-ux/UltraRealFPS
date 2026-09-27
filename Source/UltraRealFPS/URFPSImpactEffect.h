@@ -18,7 +18,7 @@ class ULTRAREALFPS_API AURFPSImpactEffect : public AActor
 public:
     AURFPSImpactEffect();
     virtual void Tick(float DeltaSeconds) override;
-    void InitializeImpact(const FVector& SurfaceNormal, bool bCharacterImpact, EPhysicalSurface SurfaceType, bool bRicochet);
+    void InitializeImpact(const FVector& SurfaceNormal, bool bCharacterImpact, EPhysicalSurface SurfaceType, bool bRicochet, bool bPlayAudio = true);
 
 protected:
     virtual void BeginPlay() override;
