@@ -3,6 +3,8 @@ setlocal
 set "UE_ROOT=C:\Program Files\Epic Games\UE_5.8"
 set "PROJECT=%~dp0UltraRealFPS.uproject"
 set "EDITOR=%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe"
+set "ART_SOURCE=%~dp0ArtSource\Industrial\SM_Container20_A.glb"
+set "ART_SENTINEL=%~dp0Content\Environment\Industrial\SM_Container20_A.uasset"
 
 echo ==========================================================
 echo   UltraRealFPS - Build + Run Unreal Engine 5.8
@@ -51,6 +53,25 @@ if not exist "%EDITOR%" (
     echo UnrealEditor.exe introuvable.
     pause
     exit /b 1
+)
+
+if exist "%ART_SOURCE%" (
+    if not exist "%ART_SENTINEL%" (
+        echo.
+        echo ==========================================================
+        echo   PREMIER IMPORT DU KIT ART FOUNDATION
+        echo ==========================================================
+        call "%~dp0IMPORT_ART_ASSETS.bat" /nopause
+        if errorlevel 1 (
+            echo.
+            echo [ERREUR] Compilation OK mais import des nouveaux models echoue.
+            echo Tu peux relancer IMPORT_ART_ASSETS.bat separement apres correction.
+            pause
+            exit /b 1
+        )
+    ) else (
+        echo [ART] Kit industriel deja importe.
+    )
 )
 
 start "" "%EDITOR%" "%PROJECT%"
