@@ -46,6 +46,9 @@ private:
         Wood,
         Metal,
         Dark,
+        Asphalt,
+        ConcreteLight,
+        PaintBlue,
         Accent,
         Hazard,
         SupplyAmmo,
@@ -57,6 +60,13 @@ private:
     void BuildLighting();
     void CreateMaterials();
     void BuildArena();
+    void BuildIndustrialArchitecturePass();
+    void LoadImportedArtAssets();
+    AStaticMeshActor* SpawnImportedArtMesh(UStaticMesh* MeshAsset, const FVector& Location,
+        const FRotator& Rotation = FRotator::ZeroRotator, const FVector& Scale = FVector::OneVector,
+        bool bCollision = true, EBlockStyle SurfaceStyle = EBlockStyle::Metal);
+    void SpawnWorldLabel(const FVector& Location, const FRotator& Rotation, const FString& Label,
+        const FColor& Color, float WorldSize = 42.f);
     void SpawnBlock(const FVector& Location, const FVector& Scale, const FRotator& Rotation = FRotator::ZeroRotator,
         bool bCastShadow = true, EBlockStyle Style = EBlockStyle::Wall);
     AStaticMeshActor* SpawnTaggedBlock(const FVector& Location, const FVector& Scale, FName Tag,
@@ -79,6 +89,20 @@ private:
 
     UPROPERTY() UStaticMesh* CubeMesh = nullptr;
     UPROPERTY() UStaticMesh* CylinderMesh = nullptr;
+
+    // Art Foundation kit. These assets are optional at compile time: the procedural blockout
+    // remains a fallback until IMPORT_ART_ASSETS.bat has generated the .uasset files.
+    UPROPERTY() UStaticMesh* ArtContainer20 = nullptr;
+    UPROPERTY() UStaticMesh* ArtConcreteBarrier = nullptr;
+    UPROPERTY() UStaticMesh* ArtIndustrialCrate = nullptr;
+    UPROPERTY() UStaticMesh* ArtPallet = nullptr;
+    UPROPERTY() UStaticMesh* ArtElectricalCabinet = nullptr;
+    UPROPERTY() UStaticMesh* ArtHVAC = nullptr;
+    UPROPERTY() UStaticMesh* ArtPipeRack = nullptr;
+    UPROPERTY() UStaticMesh* ArtLoadingBay = nullptr;
+    UPROPERTY() UStaticMesh* ArtLampPost = nullptr;
+    UPROPERTY() UStaticMesh* ArtFuelTank = nullptr;
+    UPROPERTY() UStaticMesh* ArtStorageRack = nullptr;
     UPROPERTY() UMaterialInterface* BaseShapeMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* FloorMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* WallMaterial = nullptr;
@@ -86,6 +110,9 @@ private:
     UPROPERTY() UMaterialInstanceDynamic* WoodMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* MetalMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* DarkMaterial = nullptr;
+    UPROPERTY() UMaterialInstanceDynamic* AsphaltMaterial = nullptr;
+    UPROPERTY() UMaterialInstanceDynamic* ConcreteLightMaterial = nullptr;
+    UPROPERTY() UMaterialInstanceDynamic* PaintBlueMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* AccentMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* HazardMaterial = nullptr;
     UPROPERTY() UMaterialInstanceDynamic* AmmoMaterial = nullptr;

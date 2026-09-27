@@ -2,6 +2,7 @@
 setlocal EnableExtensions
 
 set "REPO_URL=https://github.com/mathiscavroy-ux/UltraRealFPS.git"
+set "TARGET_BRANCH=dev/art-foundation-industrial-kit"
 REM %~dp0 finit par un antislash. On normalise le dossier pour eviter
 REM qu'un chemin cite termine par \ et perturbe l'analyse de Robocopy.
 for %%I in ("%~dp0.") do set "SOURCE_DIR=%%~fI"
@@ -14,6 +15,7 @@ echo   UltraRealFPS - publication GitHub de la baseline
 echo ==========================================================
 echo Source : %SOURCE_DIR%
 echo Depot  : %REPO_URL%
+echo Branche: %TARGET_BRANCH%
 echo.
 
 where git >nul 2>nul
@@ -27,7 +29,7 @@ if errorlevel 1 (
 if exist "%PUBLISH_DIR%" rmdir /s /q "%PUBLISH_DIR%"
 
 echo [1/5] Clone propre du depot...
-git clone "%REPO_URL%" "%PUBLISH_DIR%"
+git clone --branch "%TARGET_BRANCH%" --single-branch "%REPO_URL%" "%PUBLISH_DIR%"
 if errorlevel 1 goto :fail
 
 echo [2/5] Copie des fichiers utiles du projet...
@@ -53,9 +55,17 @@ if errorlevel 1 git config user.email "mathiscavroy-ux@users.noreply.github.com"
 
 git lfs version >nul 2>nul
 if errorlevel 1 (
-    echo [INFO] Git LFS n'est pas installe.
-    echo        Le code source peut etre publie tant qu'aucun gros asset LFS n'est ajoute.
-    echo        Avant les vrais .uasset/.umap/audio/textures, installe Git LFS.
+    if exist "%SOURCE_DIR%\ArtSource\Industrial\SM_Container20_A.glb" (
+        echo [ERREUR] Git LFS est obligatoire pour publier le nouveau kit 3D.
+        echo Installe Git LFS puis relance PUBLISH_TO_GITHUB.bat.
+        goto :gitfail
+    )
+    if exist "%SOURCE_DIR%\Content\Environment\Industrial\SM_Container20_A.uasset" (
+        echo [ERREUR] Git LFS est obligatoire pour publier les assets Unreal.
+        echo Installe Git LFS puis relance PUBLISH_TO_GITHUB.bat.
+        goto :gitfail
+    )
+    echo [INFO] Git LFS non installe, mais aucun asset binaire du kit n'a ete detecte.
 ) else (
     git lfs install --local >nul 2>nul
 )
@@ -77,8 +87,8 @@ if "%DIFFCODE%"=="0" (
     goto :gitfail
 )
 
-echo [4/5] Push vers main...
-git push origin HEAD:main
+echo [4/5] Push vers %TARGET_BRANCH%...
+git push origin HEAD:%TARGET_BRANCH%
 if errorlevel 1 goto :gitfail
 
 echo [5/5] Verification terminee.
@@ -89,7 +99,8 @@ echo.
 echo ==========================================================
 echo   PUBLICATION GITHUB REUSSIE
 echo ==========================================================
-echo Depot : mathiscavroy-ux/UltraRealFPS
+echo Depot   : mathiscavroy-ux/UltraRealFPS
+echo Branche : %TARGET_BRANCH%
 echo Le dossier de jeu original n'a pas ete transforme ni modifie par Git.
 echo.
 pause

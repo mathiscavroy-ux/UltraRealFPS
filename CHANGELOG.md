@@ -1,5 +1,69 @@
 # UltraRealFPS — Changelog
 
+## Art Foundation Industrial Kit — en test
+
+### Sortie du blockout
+- 11 vrais meshes GLB créés pour UltraRealFPS et ajoutés au pipeline source ;
+- import automatisé UE 5.8 via Python/Interchange ;
+- GameMode charge les meshes importés et conserve un fallback procédural ;
+- conteneurs, barrières, racks, réservoirs, HVAC, baies de chargement et props commencent à remplacer visuellement les primitives.
+
+### Workflow
+- `IMPORT_ART_ASSETS.bat` importe/reimporte le kit ;
+- `BUILD_AND_RUN.bat` lance l'import automatiquement au premier build ;
+- PythonScriptPlugin + EditorScriptingUtilities activés pour le pipeline éditeur ;
+- Git LFS devient obligatoire dès que les assets binaires du kit sont publiés.
+
+### Validation
+- branche : `dev/art-foundation-industrial-kit` ;
+- compilation/runtime et import UE 5.8 à valider sur le PC de test avant merge.
+
+
+## Industrial Architecture Expansion — en test
+
+### Architecture lisible à moyenne distance
+- vraie façade de chargement sur l'entrepôt Est : quai, auvent, quatre baies, nervures, poteaux et bollards ;
+- unités de ventilation sur toiture et silhouette supérieure plus travaillée ;
+- bloc CQB Ouest avec toiture en plusieurs hauteurs, entrée couverte et modules de façade ;
+- portique central converti en structure plus complète avec truss et cabine OPS ;
+- cour Sud enrichie avec pipe-rack, conduites suspendues et zone électrique ;
+- nouvelle tour de surveillance au Nord ;
+- travées verticales ajoutées sur le mur périphérique pour casser les longues bandes plates ;
+- signalétique 3D : WAREHOUSE 01, CQB WEST, OPS, HIGH VOLTAGE et TOWER 02.
+
+### Rendu
+- exposition légèrement remontée par rapport à la build précédente ;
+- soleil et skylight rééquilibrés pour conserver les ombres sans boucher les façades ;
+- détails répétitifs toujours instanciés pour limiter l'overhead CPU.
+
+### Validation
+- branche : `dev/visible-environment-overhaul` ;
+- compilation/runtime UE 5.8 à valider avant merge dans `main`.
+
+
+## Visible Environment Overhaul — en test
+
+### Changements immédiatement visibles
+- refonte du sol avec grandes zones asphaltées, dalles de service et marquages plus lisibles dès le spawn ;
+- contraste global renforcé : matériaux plus sombres et moins gris uniforme ;
+- angle solaire abaissé, skylight réduit et exposition mieux contenue ;
+- ajout d'un portique d'entrée central très visible ;
+- entrepôt Est avec toit/corniche plus lisible et bandes de façade bleues ;
+- shoot-house Ouest avec bande haute contrastée ;
+- deux grands réservoirs industriels ajoutés pour casser la skyline et donner une vraie identité au côté Est.
+
+### Rendu / exposition
+- ajout d'un PostProcessVolume global ;
+- compensation d'exposition négative légère ;
+- adaptation min/max resserrée ;
+- local exposure réglé pour préserver les hautes lumières et les ombres.
+
+### Validation
+- branche GitHub : `dev/visible-environment-overhaul` ;
+- objectif : corriger le retour "les changements sont trop subtils" ;
+- compilation/runtime UE 5.8 à valider sur le PC de test.
+
+
 ## Environment Graphics Pass — en test
 
 ### Structure visuelle

@@ -43,14 +43,17 @@
 5. Le multijoueur n'est pas prévu dans les systèmes actuels ; ne pas l'ajouter avant stabilisation du solo.
 
 ## Développement actuel
-- branche : `dev/environment-graphics-pass` ;
-- étape roadmap : **ÉTAPE 2 — graphismes / environnement** ;
-- détail répétitif migré vers ISM pour supporter davantage de dressing visuel ;
-- entrepôt, shoot-house, cour Sud et éclairage de service sont en cours de densification ;
-- pas encore publié comme baseline stable tant que le test UE 5.8 n'est pas validé.
+- branche : `dev/art-foundation-industrial-kit` ;
+- étape roadmap : **ÉTAPE 2 — sortie du blockout / vrais meshes** ;
+- 11 modèles GLB internes sont maintenant reliés à un import automatique UE 5.8 ;
+- le GameMode utilise ces meshes quand ils existent et garde le blockout en fallback ;
+- validation requise : compilation, import Interchange, collisions et performance.
+
+## Documentation build
+- `PATCH_NOTES.md` contient les patch notes de la build de test courante.
 
 ## Priorités recommandées après cette update
-1. Valider la branche `dev/environment-graphics-pass` sous UE 5.8 puis publier si stable.
+1. Valider la branche `dev/art-foundation-industrial-kit` sous UE 5.8 puis merger si stable.
 2. Construire le pipeline de vrais assets audio/armes (Git LFS + imports reproductibles).
 3. Remplacer progressivement l'audio procédural par des enregistrements/MetaSounds sans changer les appels gameplay.
 4. Remplacer l'arme placeholder par un vrai viewmodel squelettique + animations.
