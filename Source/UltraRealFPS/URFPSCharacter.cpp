@@ -861,7 +861,6 @@ void AURFPSCharacter::HideMuzzleFlash()
 {
     if (MuzzleFlashLight) MuzzleFlashLight->SetVisibility(false);
     if (MuzzleFlashCone) MuzzleFlashCone->SetVisibility(false);
-    if (MuzzleFlashCone) MuzzleFlashCone->SetVisibility(false);
 }
 
 void AURFPSCharacter::RespawnSelf()
