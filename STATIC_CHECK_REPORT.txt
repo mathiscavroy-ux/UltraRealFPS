@@ -1,0 +1,6 @@
+UltraRealFPS fixed2 static smoke check
+Delimiter issues: []
+bad ImpactPoint ternary: False
+bad SkyAtmosphere include: False
+direct CrouchedHalfHeight write: False
+old BuildSettings V5: False

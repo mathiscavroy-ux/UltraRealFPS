@@ -1,0 +1,13 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.8",
+  "Category": "Games",
+  "Description": "UltraRealFPS - Acoustic & CQB Interaction Update for Unreal Engine 5.8",
+  "Modules": [
+    {
+      "Name": "UltraRealFPS",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
