@@ -1,5 +1,24 @@
 # UltraRealFPS — Changelog
 
+## Art Foundation Industrial Kit — en test
+
+### Sortie du blockout
+- 11 vrais meshes GLB créés pour UltraRealFPS et ajoutés au pipeline source ;
+- import automatisé UE 5.8 via Python/Interchange ;
+- GameMode charge les meshes importés et conserve un fallback procédural ;
+- conteneurs, barrières, racks, réservoirs, HVAC, baies de chargement et props commencent à remplacer visuellement les primitives.
+
+### Workflow
+- `IMPORT_ART_ASSETS.bat` importe/reimporte le kit ;
+- `BUILD_AND_RUN.bat` lance l'import automatiquement au premier build ;
+- PythonScriptPlugin + EditorScriptingUtilities activés pour le pipeline éditeur ;
+- Git LFS devient obligatoire dès que les assets binaires du kit sont publiés.
+
+### Validation
+- branche : `dev/art-foundation-industrial-kit` ;
+- compilation/runtime et import UE 5.8 à valider sur le PC de test avant merge.
+
+
 ## Industrial Architecture Expansion — en test
 
 ### Architecture lisible à moyenne distance
