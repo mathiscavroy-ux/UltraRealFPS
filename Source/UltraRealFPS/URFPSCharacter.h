@@ -84,6 +84,10 @@ private:
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponRail;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponGrip;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponMuzzle;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponUpperReceiver;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponFrontSight;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponTriggerGuard;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponForegrip;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* LeftArm;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* RightArm;
     UPROPERTY(VisibleAnywhere) USpotLightComponent* Flashlight;
@@ -245,6 +249,9 @@ private:
     float LeanCurrent = 0.f;
     FVector WeaponKickLocation = FVector::ZeroVector;
     FRotator WeaponKickRotation = FRotator::ZeroRotator;
+    FVector WeaponInertiaLocation = FVector::ZeroVector;
+    FRotator WeaponInertiaRotation = FRotator::ZeroRotator;
+    FVector PreviousPlanarVelocity = FVector::ZeroVector;
 
     TWeakObjectPtr<AActor> InteractionTarget;
     FVector InitialSpawnLocation = FVector::ZeroVector;
