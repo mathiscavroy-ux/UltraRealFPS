@@ -5,6 +5,7 @@ set "PROJECT=%~dp0UltraRealFPS.uproject"
 set "EDITOR_CMD=%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
 set "SCRIPT=%~dp0Tools\import_art_assets.py"
 set "SENTINEL=%~dp0Content\Environment\Industrial\SM_Container20_A.uasset"
+set "SUCCESS_MARKER=%~dp0Saved\ArtFoundationImport.ok"
 set "NOPAUSE=0"
 if /I "%~1"=="/nopause" set "NOPAUSE=1"
 
@@ -29,6 +30,8 @@ if not exist "%~dp0ArtSource\Industrial\SM_Container20_A.glb" (
     goto :fail
 )
 
+if exist "%SUCCESS_MARKER%" del /q "%SUCCESS_MARKER%" >nul 2>nul
+
 echo [ART] Import automatique GLB vers /Game/Environment/Industrial...
 "%EDITOR_CMD%" "%PROJECT%" -run=pythonscript -script="%SCRIPT%" -unattended -nop4 -nosplash -NoSound
 set "RESULT=%ERRORLEVEL%"
@@ -43,8 +46,12 @@ if not exist "%SENTINEL%" (
     goto :fail
 )
 
+if not exist "%~dp0Saved" mkdir "%~dp0Saved" >nul 2>nul
+> "%SUCCESS_MARKER%" echo OK
+
 echo.
 echo [OK] Kit Art Foundation importe dans Content\Environment\Industrial.
+echo [OK] Marqueur: %SUCCESS_MARKER%
 if "%NOPAUSE%"=="0" pause
 exit /b 0
 
