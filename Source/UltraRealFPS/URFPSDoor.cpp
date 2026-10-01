@@ -100,7 +100,10 @@ void AURFPSDoor::Interact(AActor* Interactor)
         FVector ToInteractor = Interactor->GetActorLocation() - GetActorLocation();
         ToInteractor.Z = 0.f;
         const float Side = FVector::DotProduct(ToInteractor.GetSafeNormal(), GetActorForwardVector());
-        OpenDirection = Side >= 0.f ? -1.f : 1.f;
+        // The leaf extends along local +Y from the hinge. A positive yaw swings it toward the
+        // door's back side, so a player standing in front (Side >= 0) needs +1 for the leaf to
+        // move away from them. The sign was inverted and every door opened into the player.
+        OpenDirection = Side >= 0.f ? 1.f : -1.f;
         bOpen = true;
         TargetYaw = ClosedYaw + OpenDirection * OpenAngle;
         URFPSAudio::PlaySpatial(this, EURFPSAudioEvent::DoorOpen, GetActorLocation() + FVector(0.f, 0.f, 90.f), 0.72f, FMath::FRandRange(0.95f, 1.05f));
