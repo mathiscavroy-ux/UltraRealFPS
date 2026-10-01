@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "URFPSNavGrid.h"
 #include "URFPSGameMode.generated.h"
 
 class UStaticMesh;
@@ -31,11 +32,18 @@ public:
     int32 GetTotalKills() const { return TotalKills; }
     int32 GetActiveShooters() const;
     int32 GetMaxActiveShooters() const;
+    int32 GetHuntingEnemies() const;
     bool IsWaveCleared() const { return bWaveCleared; }
     float GetNextWaveTimeRemaining() const;
     float GetCurrentWaveElapsed() const;
     float GetWaveIntroAlpha() const;
     FString GetWaveName() const;
+
+    // Enemy navigation over the procedural compound (see URFPSNavGrid).
+    bool IsNavigationReady() const { return NavGrid.IsReady(); }
+    bool FindNavPath(const FVector& From, const FVector& To, TArray<FVector>& OutWaypoints) const;
+    bool FindNavPointNear(const FVector& Origin, const FVector& Center, float Radius, FVector& OutLocation) const;
+    bool HasNavLine(const FVector& From, const FVector& To) const;
 
 private:
     enum class EBlockStyle : uint8
@@ -86,6 +94,9 @@ private:
     void StartNextWave();
     bool IsSpawnVisibleToPlayer(const FVector& SpawnLocation) const;
     void CleanupFireSlots();
+    void RegisterNavBox(const FVector& Location, const FVector& HalfExtents, const FRotator& Rotation);
+    void BuildNavigation();
+    void OrderSurvivorsToHunt();
 
     UPROPERTY() UStaticMesh* CubeMesh = nullptr;
     UPROPERTY() UStaticMesh* CylinderMesh = nullptr;
@@ -134,4 +145,5 @@ private:
     float WaveStartWorldTime = 0.f;
     TArray<TWeakObjectPtr<AURFPSEnemy>> ActiveShooters;
     FTimerHandle NextWaveTimerHandle;
+    FURFPSNavGrid NavGrid;
 };

@@ -27,6 +27,8 @@ $DoorSource = Require-File 'Source\UltraRealFPS\URFPSDoor.cpp'
 $ErrorCollector = Require-File 'COLLECT_BUILD_ERRORS.ps1'
 $MaterialScript = Require-File 'Tools\build_environment_materials.py'
 $MaterialBatch = Require-File 'BUILD_MATERIALS.bat'
+$NavGridHeader = Require-File 'Source\UltraRealFPS\URFPSNavGrid.h'
+$NavGridSource = Require-File 'Source\UltraRealFPS\URFPSNavGrid.cpp'
 
 if (Test-Path -LiteralPath $BuildCs) {
     $Text = Get-Content -LiteralPath $BuildCs -Raw
@@ -98,7 +100,11 @@ if (Test-Path -LiteralPath $SourceRoot) {
         @{ Pattern = 'BeginDeathFall'; Message = 'Cadavres ennemis flottants' },
         @{ Pattern = 'SnapBaseToGround'; Message = 'Recalage au sol des blocs absent' },
         @{ Pattern = 'GreatestCommonDivisor'; Message = 'Parcours des points de spawn non premier avec leur nombre' },
-        @{ Pattern = 'EnvironmentMasterMaterial'; Message = 'Pipeline master material absent du GameMode' }
+        @{ Pattern = 'EnvironmentMasterMaterial'; Message = 'Pipeline master material absent du GameMode' },
+        @{ Pattern = 'FURFPSNavGrid::FindPath'; Message = 'Grille de navigation IA absente' },
+        @{ Pattern = 'AURFPSEnemy::MoveTowards'; Message = 'Suivi de chemin IA absent (ennemis bloques contre les murs)' },
+        @{ Pattern = 'ScheduleHunt'; Message = 'Rythme des vagues absent (ennemis figes, vague bloquee)' },
+        @{ Pattern = 'TryOpenDoorAhead'; Message = 'Ouverture des portes par l''IA absente' }
     )
     foreach ($Rule in $RequiredSourcePatterns) {
         if ($AllSource -notmatch $Rule.Pattern) {

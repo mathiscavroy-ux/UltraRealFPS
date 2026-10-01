@@ -16,6 +16,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "URFPSAudio.h"
 #include "URFPSCharacter.h"
+#include "URFPSDoor.h"
 #include "URFPSGameMode.h"
 #include "URFPSProjectile.h"
 
@@ -160,6 +161,9 @@ void AURFPSEnemy::BeginPlay()
     StrafeDirection = FMath::RandBool() ? 1 : -1;
     StrafeChangeTimer = FMath::FRandRange(0.8f, 2.4f);
     FireCooldown = FMath::FRandRange(1.1f, 2.55f);
+    GuardLocation = GetActorLocation();
+    ProgressAnchor = GuardLocation;
+    PatrolWaitTimer = FMath::FRandRange(3.f, 9.f);
 
     if (UMaterialInterface* ParentMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial")))
     {
@@ -401,6 +405,13 @@ void AURFPSEnemy::ApplySuppression(const FVector& SourceLocation)
 void AURFPSEnemy::ReactToGrenade(const FVector& GrenadeLocation)
 {
     if (bDead) return;
+    if (TimeSinceSeen >= SearchLingerTime)
+    {
+        // An enemy without recent contact never reached the evasion code and stood next to the
+        // grenade. It now enters the contact phase: flee first, then check where it landed.
+        LastSeenLocation = GrenadeLocation;
+        TimeSinceSeen = SearchLingerTime * 0.5f;
+    }
     GrenadeThreatLocation = GrenadeLocation;
     GrenadeAvoidTimer = FMath::Max(GrenadeAvoidTimer, FMath::FRandRange(0.85f, 1.35f));
     RepositionTimer = FMath::Max(RepositionTimer, 1.1f);
@@ -484,11 +495,24 @@ void AURFPSEnemy::Tick(float DeltaSeconds)
     CoverSeekTimer = FMath::Max(0.f, CoverSeekTimer - DeltaSeconds);
     GrenadeAvoidTimer = FMath::Max(0.f, GrenadeAvoidTimer - DeltaSeconds);
 
+    DoorCooldown = FMath::Max(0.f, DoorCooldown - DeltaSeconds);
+
     if (bAlerted && TimeSinceSeen < SearchLingerTime)
     {
         UpdateCombatMovement(Player, DeltaSeconds, bHasLOS);
         TryFire(DeltaSeconds, Player, bHasLOS);
+        return;
     }
+
+    // The contact went cold. Enemies used to freeze on the spot from here on, so a player who
+    // stayed out of sight stalled the wave: they now search where the player was last seen or
+    // heard, then patrol, and hunt once the GameMode pacing says so.
+    if (bAlerted)
+    {
+        bAlerted = false;
+        BeginSearch(LastSeenLocation, 3);
+    }
+    UpdateNavigation(Player, DeltaSeconds);
 }
 
 bool AURFPSEnemy::IsPlayerDown(const APawn* Player) const
@@ -506,6 +530,18 @@ void AURFPSEnemy::DisengageFromDownedPlayer()
     // goes through its normal reaction delay instead of firing instantly at the spawn point.
     bAlerted = false;
     TimeSinceSeen = SearchLingerTime;
+
+    // Hunters fall back to a patrol and give the respawned player a moment before closing in.
+    if (Intent == EURFPSEnemyIntent::Hunt || Intent == EURFPSEnemyIntent::Search)
+    {
+        GuardLocation = GetActorLocation();
+        SetIntent(EURFPSEnemyIntent::Patrol);
+    }
+    if (HuntStartTime >= 0.f)
+    {
+        HuntStartTime = FMath::Max(HuntStartTime, GetWorldTimeSeconds() + 12.f);
+    }
+    HuntRefreshCount = 0;
 }
 
 void AURFPSEnemy::UpdateLegSwing(float DeltaSeconds)
@@ -675,6 +711,19 @@ void AURFPSEnemy::ReleaseFireSlot()
 
 void AURFPSEnemy::UpdateCombatMovement(APawn* Player, float DeltaSeconds, bool bHasLOS)
 {
+    // Out of sight: close in on the last known position along a planned route. The straight
+    // line used before walked enemies into walls (one followed the security office walls for
+    // minutes without finding the door).
+    if (!bHasLOS && GrenadeAvoidTimer <= 0.f)
+    {
+        if (MoveTowards(LastSeenLocation, 0.85f, 110.f, DeltaSeconds))
+        {
+            // Nobody there: the contact is over, the search starts on the next tick.
+            TimeSinceSeen = SearchLingerTime;
+        }
+        return;
+    }
+
     const FVector TargetLocation = bHasLOS ? Player->GetActorLocation() : LastSeenLocation;
     FVector ToTarget = TargetLocation - GetActorLocation();
     ToTarget.Z = 0.f;
@@ -874,6 +923,364 @@ void AURFPSEnemy::FireOneShot(APawn* Player)
         }
         MuzzleFlashTimer = FMath::FRandRange(0.020f, 0.034f);
     }
+}
+
+float AURFPSEnemy::GetWorldTimeSeconds() const
+{
+    return GetWorld() ? static_cast<float>(GetWorld()->GetTimeSeconds()) : 0.f;
+}
+
+void AURFPSEnemy::ScheduleHunt(float DelaySeconds)
+{
+    HuntStartTime = GetWorldTimeSeconds() + FMath::Max(0.f, DelaySeconds);
+}
+
+void AURFPSEnemy::BeginHunt()
+{
+    if (bDead) return;
+
+    const float Now = GetWorldTimeSeconds();
+    if (HuntStartTime < 0.f || HuntStartTime > Now)
+    {
+        HuntStartTime = Now;
+    }
+    if (Intent != EURFPSEnemyIntent::Hunt)
+    {
+        SetIntent(EURFPSEnemyIntent::Hunt);
+        HuntRefreshTimer = 0.f;
+    }
+}
+
+void AURFPSEnemy::SetIntent(EURFPSEnemyIntent NewIntent)
+{
+    Intent = NewIntent;
+    bHasMoveTarget = false;
+    LookAroundTimer = 0.f;
+    ClearPath();
+}
+
+void AURFPSEnemy::ClearPath()
+{
+    bHasPath = false;
+    PathPoints.Reset();
+    PathIndex = 0;
+    StuckCount = 0;
+    ProgressTimer = 0.f;
+    ProgressAnchor = GetActorLocation();
+}
+
+void AURFPSEnemy::BeginSearch(const FVector& Center, int32 Points)
+{
+    SetIntent(EURFPSEnemyIntent::Search);
+    SearchCenter = Center;
+    SearchPointsLeft = FMath::Max(1, Points);
+}
+
+void AURFPSEnemy::PickHuntTarget(const APawn* Player)
+{
+    HuntRefreshTimer = FMath::FRandRange(6.5f, 9.5f);
+    if (!Player) return;
+
+    // The squad knows the player's sector, not the exact spot: the estimate tightens with every
+    // refresh, so a hidden player is found within a minute or two rather than instantly.
+    const float Uncertainty = FMath::Max(450.f, 1500.f - 220.f * static_cast<float>(HuntRefreshCount));
+    ++HuntRefreshCount;
+    const float Angle = FMath::FRand() * 2.f * PI;
+    const float Distance = Uncertainty * FMath::Sqrt(FMath::FRand());
+    const FVector Estimate = Player->GetActorLocation() + FVector(FMath::Cos(Angle) * Distance, FMath::Sin(Angle) * Distance, 0.f);
+
+    FVector Target = Estimate;
+    if (AURFPSGameMode* GameMode = Cast<AURFPSGameMode>(UGameplayStatics::GetGameMode(this)))
+    {
+        FVector Reachable;
+        if (GameMode->FindNavPointNear(GetActorLocation(), Estimate, 400.f, Reachable))
+        {
+            Target = Reachable;
+        }
+    }
+
+    // Keep the current route unless the estimate moved noticeably.
+    if (!bHasMoveTarget || FVector::Dist2D(Target, MoveTarget) > 500.f)
+    {
+        MoveTarget = Target;
+        bHasMoveTarget = true;
+    }
+}
+
+bool AURFPSEnemy::PickPatrolPoint()
+{
+    PatrolWaitTimer = FMath::FRandRange(6.f, 12.f);
+
+    AURFPSGameMode* GameMode = Cast<AURFPSGameMode>(UGameplayStatics::GetGameMode(this));
+    if (!GameMode || !GameMode->IsNavigationReady()) return false;
+
+    FVector Point;
+    if (!GameMode->FindNavPointNear(GetActorLocation(), GuardLocation, 700.f, Point)) return false;
+
+    if (Intent != EURFPSEnemyIntent::Patrol)
+    {
+        SetIntent(EURFPSEnemyIntent::Patrol);
+    }
+    MoveTarget = Point;
+    bHasMoveTarget = true;
+    return true;
+}
+
+void AURFPSEnemy::UpdateLookAround(float DeltaSeconds)
+{
+    LookAroundTimer -= DeltaSeconds;
+    SetActorRotation(FMath::RInterpTo(GetActorRotation(), FRotator(0.f, LookAroundYaw, 0.f), DeltaSeconds, 2.6f));
+}
+
+void AURFPSEnemy::UpdateNavigation(APawn* Player, float DeltaSeconds)
+{
+    const float Now = GetWorldTimeSeconds();
+
+    // Wave pacing: guards and patrols move out once their hunt delay has passed.
+    if (HuntStartTime >= 0.f && Now >= HuntStartTime &&
+        (Intent == EURFPSEnemyIntent::Guard || Intent == EURFPSEnemyIntent::Patrol))
+    {
+        BeginHunt();
+    }
+
+    switch (Intent)
+    {
+    case EURFPSEnemyIntent::Search:
+        if (LookAroundTimer > 0.f)
+        {
+            UpdateLookAround(DeltaSeconds);
+            break;
+        }
+        if (!bHasMoveTarget)
+        {
+            if (SearchPointsLeft <= 0)
+            {
+                if (HuntStartTime >= 0.f && Now >= HuntStartTime)
+                {
+                    SetIntent(EURFPSEnemyIntent::Hunt);
+                    HuntRefreshTimer = 0.f;
+                }
+                else
+                {
+                    GuardLocation = GetActorLocation();
+                    SetIntent(EURFPSEnemyIntent::Patrol);
+                    PatrolWaitTimer = FMath::FRandRange(2.f, 5.f);
+                }
+                break;
+            }
+            --SearchPointsLeft;
+            AURFPSGameMode* GameMode = Cast<AURFPSGameMode>(UGameplayStatics::GetGameMode(this));
+            bHasMoveTarget = GameMode && GameMode->FindNavPointNear(GetActorLocation(), SearchCenter, 650.f, MoveTarget);
+            if (!bHasMoveTarget)
+            {
+                SearchPointsLeft = 0;
+                break;
+            }
+        }
+        if (MoveTowards(MoveTarget, 0.62f, 90.f, DeltaSeconds))
+        {
+            bHasMoveTarget = false;
+            LookAroundTimer = FMath::FRandRange(1.0f, 2.0f);
+            LookAroundYaw = GetActorRotation().Yaw + FMath::FRandRange(70.f, 140.f) * (FMath::RandBool() ? 1.f : -1.f);
+        }
+        break;
+
+    case EURFPSEnemyIntent::Hunt:
+        HuntRefreshTimer -= DeltaSeconds;
+        if (HuntRefreshTimer <= 0.f || !bHasMoveTarget)
+        {
+            PickHuntTarget(Player);
+        }
+        if (bHasMoveTarget && MoveTowards(MoveTarget, Role == EURFPSEnemyRole::Breacher ? 0.92f : 0.78f, 150.f, DeltaSeconds))
+        {
+            // Sweep the estimated area, then the hunt resumes from a fresher estimate.
+            BeginSearch(MoveTarget, 2);
+        }
+        break;
+
+    case EURFPSEnemyIntent::Patrol:
+    case EURFPSEnemyIntent::Guard:
+    default:
+        if (bHasMoveTarget)
+        {
+            if (MoveTowards(MoveTarget, 0.42f, 80.f, DeltaSeconds))
+            {
+                bHasMoveTarget = false;
+                PatrolWaitTimer = FMath::FRandRange(5.f, 11.f);
+                LookAroundTimer = FMath::FRandRange(1.2f, 2.2f);
+                LookAroundYaw = GetActorRotation().Yaw + FMath::FRandRange(60.f, 150.f) * (FMath::RandBool() ? 1.f : -1.f);
+            }
+        }
+        else
+        {
+            if (LookAroundTimer > 0.f)
+            {
+                UpdateLookAround(DeltaSeconds);
+            }
+            PatrolWaitTimer -= DeltaSeconds;
+            if (PatrolWaitTimer <= 0.f)
+            {
+                PickPatrolPoint();
+            }
+        }
+        break;
+    }
+}
+
+bool AURFPSEnemy::MoveTowards(const FVector& Goal, float SpeedScale, float AcceptRadius, float DeltaSeconds)
+{
+    const FVector Location = GetActorLocation();
+    if (FVector::Dist2D(Location, Goal) <= AcceptRadius)
+    {
+        ClearPath();
+        return true;
+    }
+
+    AURFPSGameMode* GameMode = Cast<AURFPSGameMode>(UGameplayStatics::GetGameMode(this));
+    const bool bNavigation = GameMode && GameMode->IsNavigationReady();
+
+    RepathTimer -= DeltaSeconds;
+    if (bNavigation && (!bHasPath || FVector::Dist2D(PathGoal, Goal) > 150.f || RepathTimer <= 0.f))
+    {
+        bHasPath = GameMode->FindNavPath(Location, Goal, PathPoints);
+        PathIndex = 0;
+        PathGoal = Goal;
+        RepathTimer = FMath::FRandRange(3.5f, 5.5f);
+        if (!bHasPath)
+        {
+            // Cut off from the goal: report it as done so the behaviour picks another one.
+            ClearPath();
+            return true;
+        }
+    }
+
+    FVector Waypoint = Goal;
+    if (bNavigation && bHasPath && PathPoints.Num() > 0)
+    {
+        const int32 LastIndex = PathPoints.Num() - 1;
+        while (PathIndex < LastIndex && FVector::Dist2D(Location, PathPoints[PathIndex]) < 60.f)
+        {
+            ++PathIndex;
+        }
+        // Cut the next corner when the straight line is free (the route was planned from an
+        // older position).
+        if (PathIndex < LastIndex && GameMode->HasNavLine(Location, PathPoints[PathIndex + 1]))
+        {
+            ++PathIndex;
+        }
+        Waypoint = PathPoints[PathIndex];
+        if (PathIndex == LastIndex && FVector::Dist2D(Location, Waypoint) <= FMath::Max(AcceptRadius, 60.f))
+        {
+            // End of the reachable route (the goal itself may stand on a platform or deck).
+            ClearPath();
+            return true;
+        }
+    }
+
+    FVector Direction = Waypoint - Location;
+    Direction.Z = 0.f;
+    Direction = Direction.GetSafeNormal();
+    if (!bNavigation)
+    {
+        Direction = GetAvoidanceDirection(Direction);
+    }
+
+    TryOpenDoorAhead(Direction);
+    if (DoorPauseTimer > 0.f)
+    {
+        DoorPauseTimer -= DeltaSeconds;
+        return false;
+    }
+
+    // Stuck on another enemy, a door leaf or an art mesh wider than its bounds: sidestep and
+    // replan; give the goal up after a few failed attempts.
+    ProgressTimer += DeltaSeconds;
+    if (ProgressTimer >= 1.6f)
+    {
+        if (FVector::Dist2D(Location, ProgressAnchor) < 35.f)
+        {
+            ++StuckCount;
+            bHasPath = false;
+            SidestepDirection = FVector::CrossProduct(FVector::UpVector, Direction) * (FMath::RandBool() ? 1.f : -1.f);
+            SidestepTimer = 0.55f;
+        }
+        else
+        {
+            StuckCount = 0;
+        }
+        ProgressTimer = 0.f;
+        ProgressAnchor = Location;
+        if (StuckCount >= 4)
+        {
+            ClearPath();
+            return true;
+        }
+    }
+
+    FVector Move = Direction + GetSquadSeparation() * 0.6f;
+    if (SidestepTimer > 0.f)
+    {
+        SidestepTimer -= DeltaSeconds;
+        Move = Move * 0.35f + SidestepDirection;
+    }
+    Move.Z = 0.f;
+    Move = Move.GetSafeNormal();
+
+    if (!Direction.IsNearlyZero())
+    {
+        SetActorRotation(FMath::RInterpTo(GetActorRotation(), Direction.Rotation(), DeltaSeconds, 5.f));
+    }
+    if (!Move.IsNearlyZero())
+    {
+        AddMovementInput(Move, SpeedScale);
+    }
+    return false;
+}
+
+void AURFPSEnemy::TryOpenDoorAhead(const FVector& Direction)
+{
+    if (DoorCooldown > 0.f || Direction.IsNearlyZero() || !GetWorld()) return;
+
+    const FVector Start = GetActorLocation() + FVector(0.f, 0.f, 30.f);
+    const FVector End = Start + Direction * 150.f;
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(EnemyDoorProbe), false, this);
+    Params.AddIgnoredActor(this);
+
+    FHitResult Hit;
+    if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params)) return;
+
+    if (AURFPSDoor* Door = Cast<AURFPSDoor>(Hit.GetActor()))
+    {
+        if (!Door->IsOpen())
+        {
+            // Doors are on the routes now: the enemy opens them (audible to the player) instead
+            // of pushing against the leaf. The leaf swings away from it.
+            Door->Interact(this);
+            DoorPauseTimer = 0.45f;
+        }
+        DoorCooldown = 1.2f;
+    }
+}
+
+FVector AURFPSEnemy::GetSquadSeparation() const
+{
+    FVector Push = FVector::ZeroVector;
+    if (!GetWorld()) return Push;
+
+    for (TActorIterator<AURFPSEnemy> It(GetWorld()); It; ++It)
+    {
+        const AURFPSEnemy* Other = *It;
+        if (Other == this || !IsValid(Other) || Other->bDead) continue;
+
+        FVector Away = GetActorLocation() - Other->GetActorLocation();
+        Away.Z = 0.f;
+        const float Distance = static_cast<float>(Away.Size());
+        if (Distance > 1.f && Distance < 130.f)
+        {
+            Push += Away / Distance * (1.f - Distance / 130.f);
+        }
+    }
+    return Push;
 }
 
 void AURFPSEnemy::UpdateFootsteps(float DeltaSeconds)

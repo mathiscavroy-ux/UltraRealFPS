@@ -89,8 +89,13 @@ void AURFPSHUD::DrawHUD()
 
         if (!GameMode->IsWaveCleared())
         {
-            const FString Pressure = FString::Printf(TEXT("FEU ENNEMI  %d/%d"), GameMode->GetActiveShooters(), GameMode->GetMaxActiveShooters());
-            DrawText(Pressure, FLinearColor(0.72f, 0.74f, 0.70f, 0.72f), CenterX - 52.f, 57.f, Font, 0.66f, false);
+            // Enemies hunting the player's sector (wave pacing) are shown next to the fire pressure.
+            const int32 Hunting = GameMode->GetHuntingEnemies();
+            const FString Pressure = Hunting > 0
+                ? FString::Printf(TEXT("FEU ENNEMI  %d/%d   EN APPROCHE  %d"), GameMode->GetActiveShooters(), GameMode->GetMaxActiveShooters(), Hunting)
+                : FString::Printf(TEXT("FEU ENNEMI  %d/%d"), GameMode->GetActiveShooters(), GameMode->GetMaxActiveShooters());
+            const float PressureX = Hunting > 0 ? CenterX - 104.f : CenterX - 52.f;
+            DrawText(Pressure, FLinearColor(0.72f, 0.74f, 0.70f, 0.72f), PressureX, 57.f, Font, 0.66f, false);
         }
 
         const float IntroAlpha = GameMode->GetWaveIntroAlpha();

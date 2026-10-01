@@ -54,6 +54,7 @@ void AURFPSGameMode::StartPlay()
     BuildArena();
     Super::StartPlay();
     SpawnSupplies();
+    BuildNavigation();
     SpawnWave();
 }
 
@@ -250,6 +251,15 @@ AStaticMeshActor* AURFPSGameMode::SpawnImportedArtMesh(UStaticMesh* MeshAsset, c
         Mesh->SetPhysMaterialOverride(PhysicalMaterial);
     }
     Actor->SetActorScale3D(Scale);
+
+    if (bCollision)
+    {
+        const FBox Bounds = MeshAsset->GetBoundingBox();
+        const FVector LocalCenter = Bounds.GetCenter() * Scale;
+        const FVector LocalExtent = Bounds.GetExtent() * Scale;
+        RegisterNavBox(Location + Rotation.RotateVector(LocalCenter),
+            FVector(FMath::Abs(LocalExtent.X), FMath::Abs(LocalExtent.Y), FMath::Abs(LocalExtent.Z)), Rotation);
+    }
     return Actor;
 }
 
@@ -335,6 +345,7 @@ void AURFPSGameMode::SpawnBlock(const FVector& Location, const FVector& Scale, c
     if (UMaterialInterface* Material = GetMaterialForStyle(Style)) Mesh->SetMaterial(0, Material);
     if (UPhysicalMaterial* PhysicalMaterial = GetPhysicalMaterialForStyle(Style)) Mesh->SetPhysMaterialOverride(PhysicalMaterial);
     Block->SetActorScale3D(GroundedScale);
+    RegisterNavBox(GroundedLocation, GroundedScale * 50.f, Rotation);
 }
 
 AStaticMeshActor* AURFPSGameMode::SpawnTaggedBlock(const FVector& Location, const FVector& Scale, FName Tag, EBlockStyle Style)
@@ -357,6 +368,7 @@ AStaticMeshActor* AURFPSGameMode::SpawnTaggedBlock(const FVector& Location, cons
     if (UPhysicalMaterial* PhysicalMaterial = GetPhysicalMaterialForStyle(Style)) Mesh->SetPhysMaterialOverride(PhysicalMaterial);
     Block->SetActorScale3D(GroundedScale);
     Block->Tags.Add(Tag);
+    RegisterNavBox(GroundedLocation, GroundedScale * 50.f, FRotator::ZeroRotator);
     return Block;
 }
 
@@ -378,6 +390,18 @@ void AURFPSGameMode::SpawnCylinder(const FVector& Location, const FVector& Scale
     if (UMaterialInterface* Material = GetMaterialForStyle(Style)) Mesh->SetMaterial(0, Material);
     if (UPhysicalMaterial* PhysicalMaterial = GetPhysicalMaterialForStyle(Style)) Mesh->SetPhysMaterialOverride(PhysicalMaterial);
     Prop->SetActorScale3D(GroundedScale);
+
+    if (FMath::IsNearlyZero(Rotation.Pitch) && FMath::IsNearlyZero(Rotation.Roll))
+    {
+        // Upright engine cylinder: 100 cm diameter and height per unit of scale.
+        NavGrid.AddCylinder(GroundedLocation,
+            static_cast<float>(50.0 * FMath::Max(FMath::Abs(GroundedScale.X), FMath::Abs(GroundedScale.Y))),
+            static_cast<float>(50.0 * FMath::Abs(GroundedScale.Z)));
+    }
+    else
+    {
+        RegisterNavBox(GroundedLocation, GroundedScale * 50.f, Rotation);
+    }
 }
 
 UInstancedStaticMeshComponent* AURFPSGameMode::GetOrCreateDetailISM(EBlockStyle Style, bool bCylinder, bool bCastShadow)
@@ -460,8 +484,40 @@ void AURFPSGameMode::SpawnWorldLabel(const FVector& Location, const FRotator& Ro
     }
 }
 
+void AURFPSGameMode::RegisterNavBox(const FVector& Location, const FVector& HalfExtents, const FRotator& Rotation)
+{
+    // Every colliding shape spawned while the compound is built feeds the enemy navigation grid.
+    // Shapes added after BuildNavigation (respawned supplies) are ignored by the grid.
+    NavGrid.AddBox(Location, HalfExtents, Rotation);
+}
+
+void AURFPSGameMode::BuildNavigation()
+{
+    NavGrid.Finalize();
+    UE_LOG(LogTemp, Log, TEXT("UltraRealFPS: navigation grid ready, %d walkable cells"), NavGrid.GetWalkableCellCount());
+}
+
+bool AURFPSGameMode::FindNavPath(const FVector& From, const FVector& To, TArray<FVector>& OutWaypoints) const
+{
+    return NavGrid.FindPath(From, To, OutWaypoints);
+}
+
+bool AURFPSGameMode::FindNavPointNear(const FVector& Origin, const FVector& Center, float Radius, FVector& OutLocation) const
+{
+    return NavGrid.FindRandomPointNear(Origin, Center, Radius, OutLocation);
+}
+
+bool AURFPSGameMode::HasNavLine(const FVector& From, const FVector& To) const
+{
+    return NavGrid.HasClearLine(From, To);
+}
+
 void AURFPSGameMode::BuildArena()
 {
+    // Enemy navigation: 25 cm cells over the 110 m slab, obstacles inflated by the enemy
+    // capsule radius (42 cm) plus 2 cm, which keeps one free column in the 1.20 m doorways.
+    NavGrid.Initialize(5500.f, 25.f, 44.f, static_cast<float>(GroundTopZ));
+
     // Large dynamic tactical compound. Ground top surface is roughly Z=-100.
     SpawnBlock(FVector(0.f, 0.f, -150.f), FVector(110.f, 110.f, 1.f), FRotator::ZeroRotator, false, EBlockStyle::Floor);
 
@@ -1352,6 +1408,10 @@ void AURFPSGameMode::SpawnWave()
     }
 
     const int32 EnemyCount = FMath::Min(6 + CurrentWave, 10);
+    // Pacing: the first enemies (2 at wave 1, up to 5) move on the player's area within seconds,
+    // the others hold and patrol their sector and join later. A hidden or silent player can no
+    // longer stall a wave, and the waves called COUNTER-ATTACK or ASSAULT now actually assault.
+    const int32 Assaulters = FMath::Clamp(CurrentWave + 1, 2, 5);
     for (int32 Index = 0; Index < EnemyCount && Index < SpawnOrder.Num(); ++Index)
     {
         const FVector Position = EnemyPositions[SpawnOrder[Index]];
@@ -1362,6 +1422,11 @@ void AURFPSGameMode::SpawnWave()
         if (AURFPSEnemy* Enemy = GetWorld()->SpawnActor<AURFPSEnemy>(AURFPSEnemy::StaticClass(), Position, Rotation))
         {
             Enemy->ConfigureForWave(CurrentWave, Index + CurrentWave * 7);
+            const bool bAssault = Index < Assaulters && Enemy->GetRole() != EURFPSEnemyRole::Marksman;
+            const float HuntDelay = bAssault
+                ? 8.f + 6.f * static_cast<float>(Index)
+                : FMath::Max(25.f, 70.f - 6.f * static_cast<float>(CurrentWave - 1) + 12.f * static_cast<float>(Index - Assaulters));
+            Enemy->ScheduleHunt(HuntDelay);
             ++EnemiesAlive;
         }
     }
@@ -1375,6 +1440,11 @@ void AURFPSGameMode::NotifyEnemyKilled()
     --EnemiesAlive;
     ++TotalKills;
 
+    if (EnemiesAlive > 0 && EnemiesAlive <= 2)
+    {
+        OrderSurvivorsToHunt();
+    }
+
     if (EnemiesAlive <= 0 && !bWaveCleared)
     {
         EnemiesAlive = 0;
@@ -1382,6 +1452,20 @@ void AURFPSGameMode::NotifyEnemyKilled()
         ActiveShooters.Reset();
         SpawnSupplies();
         GetWorldTimerManager().SetTimer(NextWaveTimerHandle, this, &AURFPSGameMode::StartNextWave, TimeBetweenWaves, false);
+    }
+}
+
+void AURFPSGameMode::OrderSurvivorsToHunt()
+{
+    // The last survivors of a wave never wait in a corner of the map: they come for the player.
+    if (!GetWorld()) return;
+    for (TActorIterator<AURFPSEnemy> It(GetWorld()); It; ++It)
+    {
+        AURFPSEnemy* Enemy = *It;
+        if (IsValid(Enemy) && !Enemy->IsEnemyDead())
+        {
+            Enemy->BeginHunt();
+        }
     }
 }
 
@@ -1430,6 +1514,18 @@ int32 AURFPSGameMode::GetActiveShooters() const
     for (const TWeakObjectPtr<AURFPSEnemy>& Entry : ActiveShooters)
     {
         if (Entry.IsValid() && !Entry->IsEnemyDead()) ++Count;
+    }
+    return Count;
+}
+
+int32 AURFPSGameMode::GetHuntingEnemies() const
+{
+    int32 Count = 0;
+    if (!GetWorld()) return Count;
+    for (TActorIterator<AURFPSEnemy> It(GetWorld()); It; ++It)
+    {
+        const AURFPSEnemy* Enemy = *It;
+        if (IsValid(Enemy) && !Enemy->IsEnemyDead() && Enemy->GetIntent() == EURFPSEnemyIntent::Hunt) ++Count;
     }
     return Count;
 }

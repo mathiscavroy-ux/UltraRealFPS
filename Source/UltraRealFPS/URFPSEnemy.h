@@ -18,6 +18,15 @@ enum class EURFPSEnemyRole : uint8
     Breacher
 };
 
+// What an enemy does while it has no recent contact with the player.
+enum class EURFPSEnemyIntent : uint8
+{
+    Guard,
+    Patrol,
+    Search,
+    Hunt
+};
+
 UCLASS()
 class ULTRAREALFPS_API AURFPSEnemy : public ACharacter
 {
@@ -37,6 +46,12 @@ public:
     bool IsEnemyDead() const { return bDead; }
     bool HasFireSlot() const { return bHasFireSlot; }
     EURFPSEnemyRole GetRole() const { return Role; }
+    EURFPSEnemyIntent GetIntent() const { return Intent; }
+
+    // Wave pacing set by the GameMode: once the delay has passed the enemy leaves its sector and
+    // moves on the player's area. BeginHunt starts it immediately (last survivors of a wave).
+    void ScheduleHunt(float DelaySeconds);
+    void BeginHunt();
 
 protected:
     virtual void BeginPlay() override;
@@ -77,6 +92,19 @@ private:
     void SetRoleFromSeed(int32 RoleSeed);
     bool AcquireFireSlot();
     void ReleaseFireSlot();
+
+    // Navigation and non-combat behaviour (patrol, search, hunt) over the GameMode nav grid.
+    void UpdateNavigation(APawn* Player, float DeltaSeconds);
+    void SetIntent(EURFPSEnemyIntent NewIntent);
+    bool MoveTowards(const FVector& Goal, float SpeedScale, float AcceptRadius, float DeltaSeconds);
+    void ClearPath();
+    void BeginSearch(const FVector& Center, int32 Points);
+    void PickHuntTarget(const APawn* Player);
+    bool PickPatrolPoint();
+    void UpdateLookAround(float DeltaSeconds);
+    void TryOpenDoorAhead(const FVector& Direction);
+    FVector GetSquadSeparation() const;
+    float GetWorldTimeSeconds() const;
 
     EURFPSEnemyRole Role = EURFPSEnemyRole::Rifleman;
 
@@ -131,4 +159,29 @@ private:
     bool bAlerted = false;
     bool bDead = false;
     bool bHasFireSlot = false;
+
+    EURFPSEnemyIntent Intent = EURFPSEnemyIntent::Guard;
+    TArray<FVector> PathPoints;
+    int32 PathIndex = 0;
+    FVector PathGoal = FVector::ZeroVector;
+    bool bHasPath = false;
+    float RepathTimer = 0.f;
+    float ProgressTimer = 0.f;
+    FVector ProgressAnchor = FVector::ZeroVector;
+    int32 StuckCount = 0;
+    float SidestepTimer = 0.f;
+    FVector SidestepDirection = FVector::ZeroVector;
+    FVector MoveTarget = FVector::ZeroVector;
+    bool bHasMoveTarget = false;
+    FVector SearchCenter = FVector::ZeroVector;
+    int32 SearchPointsLeft = 0;
+    float LookAroundTimer = 0.f;
+    float LookAroundYaw = 0.f;
+    float HuntStartTime = -1.f;
+    float HuntRefreshTimer = 0.f;
+    int32 HuntRefreshCount = 0;
+    FVector GuardLocation = FVector::ZeroVector;
+    float PatrolWaitTimer = 0.f;
+    float DoorCooldown = 0.f;
+    float DoorPauseTimer = 0.f;
 };
