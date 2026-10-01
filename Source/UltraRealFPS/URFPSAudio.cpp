@@ -315,11 +315,12 @@ namespace
         return *Cache.Find(Key);
     }
 
-    USoundWaveProcedural* BuildWave(UObject* Outer, const FGeneratedSound& Generated)
+    USoundWaveProcedural* BuildWave(const FGeneratedSound& Generated)
     {
-        if (!Outer) Outer = GetTransientPackage();
-
-        USoundWaveProcedural* Wave = NewObject<USoundWaveProcedural>(Outer);
+        // Waves live in the transient package. They used to be outered to the emitting actor,
+        // and projectiles / impact effects are destroyed in the same frame they play a sound.
+        // The audio component keeps the wave referenced for exactly as long as it plays.
+        USoundWaveProcedural* Wave = NewObject<USoundWaveProcedural>(GetTransientPackage());
         if (!Wave) return nullptr;
 
         Wave->NumChannels = 1;
@@ -361,7 +362,7 @@ void URFPSAudio::PlaySpatial(UObject* WorldContextObject, EURFPSAudioEvent Event
     if (!WorldContextObject) return;
 
     const FGeneratedSound& Generated = GetGeneratedTemplate(Event, FMath::RandRange(0, 3));
-    USoundWaveProcedural* Wave = BuildWave(WorldContextObject, Generated);
+    USoundWaveProcedural* Wave = BuildWave(Generated);
     if (!Wave) return;
 
     USoundAttenuation* Attenuation = NewObject<USoundAttenuation>(Wave);
@@ -424,7 +425,7 @@ void URFPSAudio::PlayLocal(UObject* WorldContextObject, EURFPSAudioEvent Event,
 {
     if (!WorldContextObject) return;
     const FGeneratedSound& Generated = GetGeneratedTemplate(Event, FMath::RandRange(0, 3));
-    USoundWaveProcedural* Wave = BuildWave(WorldContextObject, Generated);
+    USoundWaveProcedural* Wave = BuildWave(Generated);
     if (!Wave) return;
 
     UGameplayStatics::PlaySound2D(
