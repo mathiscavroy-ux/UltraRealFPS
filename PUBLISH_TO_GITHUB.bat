@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 
 set "REPO_URL=https://github.com/mathiscavroy-ux/UltraRealFPS.git"
-set "TARGET_BRANCH=dev/art-foundation-industrial-kit"
+set "TARGET_BRANCH=claude/upbeat-knuth-kuzsu8"
 REM %~dp0 finit par un antislash. On normalise le dossier pour eviter
 REM qu'un chemin cite termine par \ et perturbe l'analyse de Robocopy.
 for %%I in ("%~dp0.") do set "SOURCE_DIR=%%~fI"
@@ -32,7 +32,19 @@ echo [1/5] Clone propre du depot...
 git clone --branch "%TARGET_BRANCH%" --single-branch "%REPO_URL%" "%PUBLISH_DIR%"
 if errorlevel 1 goto :fail
 
-echo [2/5] Copie des fichiers utiles du projet...
+REM Garde-fou : Robocopy remplace les fichiers modifies. Un dossier local plus ancien
+REM que la branche ecraserait donc ses corrections. Tout fichier suivi sur la branche
+REM doit exister localement avant la copie.
+echo [2/5] Verification du dossier local puis copie des fichiers utiles...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$Missing = @(git -C $env:PUBLISH_DIR ls-files | Where-Object { -not (Test-Path -LiteralPath (Join-Path $env:SOURCE_DIR $_)) }); if ($Missing.Count -gt 0) { $Missing | Select-Object -First 12 | ForEach-Object { Write-Host ('  manquant : ' + $_) }; exit 1 }; exit 0"
+if errorlevel 1 (
+    echo [ERREUR] Ce dossier est plus ancien que la branche %TARGET_BRANCH%.
+    echo Les fichiers ci-dessus existent sur GitHub mais pas ici : publier maintenant
+    echo remplacerait les corrections de la branche par d'anciens fichiers.
+    echo Telecharge le ZIP de la branche, copie son contenu sur ce dossier, puis relance.
+    goto :fail
+)
+
 robocopy "%SOURCE_DIR%" "%PUBLISH_DIR%" *.* /E /R:1 /W:1 /NFL /NDL /NJH /NJS ^
     /XD ".git" "Binaries" "Intermediate" "Saved" "DerivedDataCache" ".vs" ^
     /XF "BUILD_ERRORS.txt" "*.sln" "*.VC.db" "*.VC.opendb" "*.suo" "*.user" "*.pdb" "*.obj" "*.log" "*.tmp"

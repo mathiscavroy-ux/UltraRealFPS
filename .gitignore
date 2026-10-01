@@ -31,3 +31,7 @@ Thumbs.db
 # Packaged builds
 Builds/
 StagedBuilds/
+
+# Python bytecode (Unreal Python tools)
+__pycache__/
+*.pyc
