@@ -80,7 +80,10 @@ private:
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponStock;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponMagazine;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponSight;
-    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponOpticLens;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponSightHoodLeft;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponSightHoodRight;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponSightHoodTop;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponReticle;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponRail;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponGrip;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponMuzzle;
@@ -95,7 +98,7 @@ private:
     UPROPERTY(VisibleAnywhere) USpotLightComponent* MuzzleFlashCone;
     UPROPERTY() UMaterialInstanceDynamic* WeaponMaterial;
     UPROPERTY() UMaterialInstanceDynamic* WeaponAccentMaterial;
-    UPROPERTY() UMaterialInstanceDynamic* OpticLensMaterial;
+    UPROPERTY() UMaterialInstanceDynamic* ReticleMaterial;
     UPROPERTY() UMaterialInstanceDynamic* ArmMaterial;
 
     void MoveForward(float Value);
@@ -133,6 +136,7 @@ private:
     void RespawnSelf();
 
     FVector GetShotDirection() const;
+    float GetCycleCooldownRemaining() const;
     void UpdateMovement(float DeltaSeconds);
     void UpdateCamera(float DeltaSeconds);
     void UpdateWeaponPresentation(float DeltaSeconds);
@@ -205,6 +209,7 @@ private:
     int32 HeadshotCount = 0;
     int32 ZeroDistanceIndex = 1;
     float RoundsPerMinute = 720.f;
+    double LastShotWorldTime = -1000.0;
     float BaseDamage = 36.f;
     float FireRange = 80000.f;
     float BulletMuzzleVelocity = 82000.f;
@@ -228,7 +233,8 @@ private:
 
     FVector BaseCameraLocation = FVector(0.f, 0.f, 64.f);
     FVector HipWeaponLocation = FVector(34.f, 13.f, -16.f);
-    FVector AimWeaponLocation = FVector(28.f, 0.4f, -8.7f);
+    // Puts the reflex sight window centre (weapon-local Y=0, Z=9.6) exactly on the camera axis.
+    FVector AimWeaponLocation = FVector(28.f, 0.f, -9.6f);
     FVector SprintWeaponLocation = FVector(26.f, 18.f, -24.f);
     FVector LowReadyWeaponLocation = FVector(25.f, 16.f, -27.f);
     FVector MagazineBaseLocation = FVector(-1.f, 0.f, -12.f);

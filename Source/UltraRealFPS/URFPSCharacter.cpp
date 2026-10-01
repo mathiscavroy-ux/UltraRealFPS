@@ -68,16 +68,27 @@ AURFPSCharacter::AURFPSCharacter()
         return Part;
     };
 
+    // Engine cylinders are Z-aligned: a pitch of 90 degrees lays them along the bore (X).
+    // A yaw rotation leaves them vertical, which used to turn the barrel into an upright rod.
+    const FRotator BoreAxisRotation(90.f, 0.f, 0.f);
+
     WeaponReceiver = CreateWeaponPart(TEXT("WeaponReceiver"), FVector::ZeroVector, FVector(0.34f, 0.075f, 0.085f));
     WeaponHandguard = CreateWeaponPart(TEXT("WeaponHandguard"), FVector(30.f, 0.f, -0.5f), FVector(0.25f, 0.06f, 0.065f));
-    WeaponBarrel = CreateWeaponPart(TEXT("WeaponBarrel"), FVector(52.f, 0.f, -0.1f), FVector(0.015f, 0.015f, 0.33f), FRotator(0.f, 90.f, 0.f));
+    WeaponBarrel = CreateWeaponPart(TEXT("WeaponBarrel"), FVector(52.f, 0.f, -0.1f), FVector(0.015f, 0.015f, 0.33f), BoreAxisRotation);
     WeaponStock = CreateWeaponPart(TEXT("WeaponStock"), FVector(-29.f, 0.f, 0.5f), FVector(0.27f, 0.065f, 0.075f), FRotator(0.f, 0.f, -4.f));
     WeaponMagazine = CreateWeaponPart(TEXT("WeaponMagazine"), MagazineBaseLocation, FVector(0.08f, 0.055f, 0.15f), FRotator(0.f, 0.f, 12.f));
     WeaponRail = CreateWeaponPart(TEXT("WeaponRail"), FVector(11.f, 0.f, 7.1f), FVector(0.27f, 0.025f, 0.015f));
-    WeaponSight = CreateWeaponPart(TEXT("WeaponSight"), FVector(5.f, 0.f, 9.0f), FVector(0.065f, 0.052f, 0.055f));
-    WeaponOpticLens = CreateWeaponPart(TEXT("WeaponOpticLens"), FVector(10.f, 0.f, 9.0f), FVector(0.022f, 0.022f, 0.030f), FRotator(0.f, 90.f, 0.f));
+
+    // Open reflex sight: a mount plus a thin hood around a window centred on the ADS axis.
+    // The previous solid sight block sat on the line of sight and hid the target when aiming.
+    WeaponSight = CreateWeaponPart(TEXT("WeaponSight"), FVector(5.f, 0.f, 7.05f), FVector(0.065f, 0.052f, 0.013f));
+    WeaponSightHoodLeft = CreateWeaponPart(TEXT("WeaponSightHoodLeft"), FVector(5.f, -2.85f, 9.6f), FVector(0.060f, 0.006f, 0.038f));
+    WeaponSightHoodRight = CreateWeaponPart(TEXT("WeaponSightHoodRight"), FVector(5.f, 2.85f, 9.6f), FVector(0.060f, 0.006f, 0.038f));
+    WeaponSightHoodTop = CreateWeaponPart(TEXT("WeaponSightHoodTop"), FVector(5.f, 0.f, 11.8f), FVector(0.060f, 0.063f, 0.006f));
+    WeaponReticle = CreateWeaponPart(TEXT("WeaponReticle"), FVector(8.f, 0.f, 9.6f), FVector(0.003f, 0.003f, 0.003f));
+
     WeaponGrip = CreateWeaponPart(TEXT("WeaponGrip"), FVector(7.f, 0.f, -11.f), FVector(0.06f, 0.05f, 0.13f), FRotator(0.f, 0.f, 12.f));
-    WeaponMuzzle = CreateWeaponPart(TEXT("WeaponMuzzle"), FVector(74.f, 0.f, -0.1f), FVector(0.026f, 0.026f, 0.075f), FRotator(0.f, 90.f, 0.f));
+    WeaponMuzzle = CreateWeaponPart(TEXT("WeaponMuzzle"), FVector(74.f, 0.f, -0.1f), FVector(0.026f, 0.026f, 0.075f), BoreAxisRotation);
 
     // Extra silhouette pieces keep the placeholder carbine readable as a weapon rather than
     // one long collection of boxes. These remain engine primitives and can later be replaced
@@ -97,7 +108,8 @@ AURFPSCharacter::AURFPSCharacter()
         TArray<UStaticMeshComponent*> CubeParts =
         {
             WeaponReceiver, WeaponHandguard, WeaponStock, WeaponMagazine, WeaponRail,
-            WeaponSight, WeaponGrip, WeaponUpperReceiver, WeaponFrontSight, WeaponTriggerGuard,
+            WeaponSight, WeaponSightHoodLeft, WeaponSightHoodRight, WeaponSightHoodTop, WeaponReticle,
+            WeaponGrip, WeaponUpperReceiver, WeaponFrontSight, WeaponTriggerGuard,
             WeaponForegrip, LeftArm, RightArm
         };
         for (UStaticMeshComponent* Part : CubeParts)
@@ -109,13 +121,11 @@ AURFPSCharacter::AURFPSCharacter()
     {
         WeaponBarrel->SetStaticMesh(CylinderMesh.Object);
         WeaponMuzzle->SetStaticMesh(CylinderMesh.Object);
-        WeaponOpticLens->SetStaticMesh(CylinderMesh.Object);
     }
     else if (CubeMesh.Succeeded())
     {
         WeaponBarrel->SetStaticMesh(CubeMesh.Object);
         WeaponMuzzle->SetStaticMesh(CubeMesh.Object);
-        WeaponOpticLens->SetStaticMesh(CubeMesh.Object);
     }
 
     Flashlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Flashlight"));
@@ -169,7 +179,7 @@ void AURFPSCharacter::BeginPlay()
     {
         WeaponMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
         WeaponAccentMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
-        OpticLensMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
+        ReticleMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
         ArmMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
 
         if (WeaponMaterial)
@@ -178,8 +188,8 @@ void AURFPSCharacter::BeginPlay()
             const TArray<UStaticMeshComponent*> WeaponParts =
             {
                 WeaponReceiver, WeaponHandguard, WeaponBarrel, WeaponStock, WeaponMagazine,
-                WeaponRail, WeaponSight, WeaponOpticLens, WeaponGrip, WeaponMuzzle,
-                WeaponUpperReceiver, WeaponFrontSight, WeaponTriggerGuard, WeaponForegrip
+                WeaponRail, WeaponSight, WeaponSightHoodLeft, WeaponSightHoodRight, WeaponSightHoodTop,
+                WeaponGrip, WeaponMuzzle, WeaponUpperReceiver, WeaponFrontSight, WeaponTriggerGuard, WeaponForegrip
             };
             for (UStaticMeshComponent* Part : WeaponParts)
             {
@@ -200,10 +210,10 @@ void AURFPSCharacter::BeginPlay()
             }
         }
 
-        if (OpticLensMaterial)
+        if (ReticleMaterial)
         {
-            OpticLensMaterial->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(0.030f, 0.095f, 0.090f, 1.f));
-            if (WeaponOpticLens) WeaponOpticLens->SetMaterial(0, OpticLensMaterial);
+            ReticleMaterial->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(1.f, 0.035f, 0.02f, 1.f));
+            if (WeaponReticle) WeaponReticle->SetMaterial(0, ReticleMaterial);
         }
 
         if (ArmMaterial)
@@ -384,20 +394,49 @@ void AURFPSCharacter::BeginFire()
     bTriggerHeld = true;
     const float Interval = 60.f / RoundsPerMinute;
 
+    // The action can never cycle faster than its cyclic rate. Before this check, clicking
+    // quickly in SEMI/BURST (or tapping in AUTO) fired faster than the 720 RPM of the weapon.
+    const float CycleRemaining = GetCycleCooldownRemaining();
+
     if (FireModeIndex == 0)
     {
-        FireShot();
+        if (CycleRemaining <= 0.f)
+        {
+            FireShot();
+        }
     }
     else if (FireModeIndex == 1)
     {
         BurstShotsRemaining = 3;
-        FireBurstShot();
+        if (CycleRemaining <= 0.f)
+        {
+            FireBurstShot();
+        }
+        else
+        {
+            GetWorldTimerManager().SetTimer(FireTimerHandle, this, &AURFPSCharacter::FireBurstShot, CycleRemaining, false);
+        }
     }
     else
     {
-        FireShot();
-        GetWorldTimerManager().SetTimer(FireTimerHandle, this, &AURFPSCharacter::FireShot, Interval, true, Interval);
+        if (CycleRemaining <= 0.f)
+        {
+            FireShot();
+            GetWorldTimerManager().SetTimer(FireTimerHandle, this, &AURFPSCharacter::FireShot, Interval, true, Interval);
+        }
+        else
+        {
+            GetWorldTimerManager().SetTimer(FireTimerHandle, this, &AURFPSCharacter::FireShot, Interval, true, CycleRemaining);
+        }
     }
+}
+
+float AURFPSCharacter::GetCycleCooldownRemaining() const
+{
+    if (!GetWorld() || RoundsPerMinute <= KINDA_SMALL_NUMBER) return 0.f;
+    const double Elapsed = GetWorld()->GetTimeSeconds() - LastShotWorldTime;
+    const double Remaining = static_cast<double>(60.f / RoundsPerMinute) - Elapsed;
+    return Remaining > 0.0 ? static_cast<float>(Remaining) : 0.f;
 }
 
 void AURFPSCharacter::EndFire()
@@ -518,6 +557,7 @@ void AURFPSCharacter::FireShot()
     --AmmoInMagazine;
     ++ShotCounter;
     ++ShotsFired;
+    LastShotWorldTime = GetWorld()->GetTimeSeconds();
     CurrentBloom = FMath::Min(MaxBloom, CurrentBloom + BloomPerShot * (bAiming ? 0.70f : 1.f));
 
     const FVector CameraStart = FirstPersonCamera->GetComponentLocation();
@@ -905,8 +945,18 @@ void AURFPSCharacter::RespawnSelf()
     if (MuzzleFlashLight) MuzzleFlashLight->SetVisibility(false);
     if (MuzzleFlashCone) MuzzleFlashCone->SetVisibility(false);
 
+    MoveForwardInput = 0.f;
+    MoveRightInput = 0.f;
+    FootstepDistanceAccumulator = 0.f;
+
     SetActorLocationAndRotation(InitialSpawnLocation, InitialSpawnRotation, false, nullptr, ETeleportType::TeleportPhysics);
     GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+    // A player who died crouched or while falling must not respawn crouched or keep momentum.
+    GetCharacterMovement()->StopMovementImmediately();
+    if (bIsCrouched)
+    {
+        UnCrouch();
+    }
 
     if (APlayerController* PC = Cast<APlayerController>(GetController()))
     {
@@ -1487,13 +1537,18 @@ float AURFPSCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Damage
         const FPointDamageEvent* PointEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
         const float RelativeHeight = PointEvent->HitInfo.ImpactPoint.Z - GetActorLocation().Z;
 
-        if (RelativeHeight > 72.f)
+        // Zones follow the current capsule height. With fixed thresholds (72 / 18 cm) a crouched
+        // capsule (half height 58) could never take a head hit and most torso hits counted as legs.
+        const float HalfHeight = FMath::Max(1.f, GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+        const float HeightRatio = RelativeHeight / HalfHeight;
+
+        if (HeightRatio > 0.78f)
         {
             ZoneMultiplier = 1.35f;
             BleedChance = 0.14f;
             bTorsoHit = false;
         }
-        else if (RelativeHeight < 18.f)
+        else if (HeightRatio < 0.195f)
         {
             ZoneMultiplier = 0.72f;
             BleedChance = 0.31f;
