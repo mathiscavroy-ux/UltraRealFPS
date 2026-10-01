@@ -6,6 +6,7 @@ set "EDITOR=%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe"
 set "ART_SOURCE=%~dp0ArtSource\Industrial\SM_Container20_A.glb"
 set "ART_SENTINEL=%~dp0Content\Environment\Industrial\SM_Container20_A.uasset"
 set "ART_SUCCESS=%~dp0Saved\ArtFoundationImport.ok"
+set "MATERIAL_SUCCESS=%~dp0Saved\EnvironmentMaterials.ok"
 
 echo ==========================================================
 echo   UltraRealFPS - Build + Run Unreal Engine 5.8
@@ -73,6 +74,21 @@ if exist "%ART_SOURCE%" (
     ) else (
         echo [ART] Kit industriel deja importe.
     )
+)
+
+REM Master material environnement (MATERIAL_PIPELINE.md). Non bloquant: sans lui le jeu
+REM garde sa palette de secours. Relance automatique tant que le marqueur n'existe pas.
+if not exist "%MATERIAL_SUCCESS%" (
+    echo.
+    echo ==========================================================
+    echo   GENERATION DES MATERIAUX ENVIRONNEMENT
+    echo ==========================================================
+    call "%~dp0BUILD_MATERIALS.bat" /nopause
+    if errorlevel 1 (
+        echo [MAT] Materiaux non generes: lancement avec la palette de secours.
+    )
+) else (
+    echo [MAT] Materiaux environnement deja generes.
 )
 
 start "" "%EDITOR%" "%PROJECT%"

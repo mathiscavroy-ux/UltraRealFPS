@@ -9,3 +9,8 @@
 *.fbx filter=lfs diff=lfs merge=lfs -text
 *.glb filter=lfs diff=lfs merge=lfs -text
 *.gltf filter=lfs diff=lfs merge=lfs -text
+
+# Windows command scripts are checked out (and zipped by GitHub) with CRLF line endings:
+# cmd.exe can miss "goto :label" targets in LF-only batch files.
+*.bat text eol=crlf
+*.cmd text eol=crlf

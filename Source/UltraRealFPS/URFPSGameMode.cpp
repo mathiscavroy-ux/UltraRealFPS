@@ -145,29 +145,68 @@ void AURFPSGameMode::BuildLighting()
 
 void AURFPSGameMode::CreateMaterials()
 {
-    if (!BaseShapeMaterial) return;
+    // Industrial Visual Rebuild, step 3 (MATERIAL_PIPELINE.md). Once BUILD_MATERIALS.bat has
+    // generated the environment master material, each blockout style becomes one shared instance
+    // of it: roughness, metallic response, low-frequency tonal breakup and dirt near the base.
+    // Without it the BasicShapeMaterial fallback uses the same palette, so both paths read alike.
+    EnvironmentMasterMaterial = LoadObject<UMaterialInterface>(nullptr,
+        TEXT("/Game/UltraRealFPS/Art/Materials/Environment/Industrial/M_Master_IndustrialSurface.M_Master_IndustrialSurface"),
+        nullptr, LOAD_NoWarn | LOAD_Quiet);
 
-    auto MakeMaterial = [this](const FLinearColor& Color)
+    struct FSurfaceStyle
     {
-        UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(BaseShapeMaterial, this);
-        if (Material) Material->SetVectorParameterValue(FName(TEXT("Color")), Color);
+        FLinearColor Color;
+        float Roughness;
+        float Metallic;
+        float DirtAmount;
+        float MacroVariation;
+        float MacroScale;
+    };
+
+    auto MakeMaterial = [this](const FSurfaceStyle& Surface) -> UMaterialInstanceDynamic*
+    {
+        UMaterialInterface* Parent = EnvironmentMasterMaterial ? EnvironmentMasterMaterial : BaseShapeMaterial;
+        if (!Parent) return nullptr;
+
+        UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(Parent, this);
+        if (!Material) return nullptr;
+
+        if (EnvironmentMasterMaterial)
+        {
+            Material->SetVectorParameterValue(FName(TEXT("BaseColorTint")), Surface.Color);
+            Material->SetScalarParameterValue(FName(TEXT("Roughness")), Surface.Roughness);
+            Material->SetScalarParameterValue(FName(TEXT("Metallic")), Surface.Metallic);
+            Material->SetScalarParameterValue(FName(TEXT("DirtAmount")), Surface.DirtAmount);
+            Material->SetScalarParameterValue(FName(TEXT("MacroVariation")), Surface.MacroVariation);
+            Material->SetScalarParameterValue(FName(TEXT("MacroScale")), Surface.MacroScale);
+        }
+        else
+        {
+            Material->SetVectorParameterValue(FName(TEXT("Color")), Surface.Color);
+        }
         return Material;
     };
 
-    FloorMaterial = MakeMaterial(FLinearColor(0.060f, 0.066f, 0.070f, 1.f));
-    WallMaterial = MakeMaterial(FLinearColor(0.125f, 0.132f, 0.136f, 1.f));
-    CoverMaterial = MakeMaterial(FLinearColor(0.185f, 0.192f, 0.188f, 1.f));
-    WoodMaterial = MakeMaterial(FLinearColor(0.205f, 0.118f, 0.050f, 1.f));
-    MetalMaterial = MakeMaterial(FLinearColor(0.060f, 0.070f, 0.078f, 1.f));
-    DarkMaterial = MakeMaterial(FLinearColor(0.024f, 0.028f, 0.034f, 1.f));
-    AsphaltMaterial = MakeMaterial(FLinearColor(0.018f, 0.022f, 0.026f, 1.f));
-    ConcreteLightMaterial = MakeMaterial(FLinearColor(0.235f, 0.235f, 0.220f, 1.f));
-    PaintBlueMaterial = MakeMaterial(FLinearColor(0.018f, 0.090f, 0.160f, 1.f));
-    AccentMaterial = MakeMaterial(FLinearColor(0.42f, 0.105f, 0.025f, 1.f));
-    HazardMaterial = MakeMaterial(FLinearColor(0.62f, 0.42f, 0.035f, 1.f));
-    AmmoMaterial = MakeMaterial(FLinearColor(0.20f, 0.25f, 0.10f, 1.f));
-    MedicalMaterial = MakeMaterial(FLinearColor(0.10f, 0.28f, 0.16f, 1.f));
-    GrenadeMaterial = MakeMaterial(FLinearColor(0.20f, 0.18f, 0.07f, 1.f));
+    // ART_DIRECTION.md palette (linear). Structures are dark graphite instead of the former
+    // near-black (0.024), concrete is a cool neutral grey, painted metal a desaturated navy,
+    // wood a muted brown, safety paint a restrained amber. Ground surfaces get no base dirt
+    // (they are the base); vertical concrete gets the most.
+    //                               Color                                     Rough  Metal  Dirt   Macro  Scale
+    FloorMaterial = MakeMaterial({ FLinearColor(0.075f, 0.078f, 0.082f, 1.f), 0.92f, 0.00f, 0.00f, 0.16f, 900.f });
+    WallMaterial = MakeMaterial({ FLinearColor(0.150f, 0.155f, 0.160f, 1.f), 0.88f, 0.00f, 0.55f, 0.12f, 350.f });
+    CoverMaterial = MakeMaterial({ FLinearColor(0.190f, 0.190f, 0.185f, 1.f), 0.85f, 0.00f, 0.45f, 0.10f, 250.f });
+    WoodMaterial = MakeMaterial({ FLinearColor(0.170f, 0.105f, 0.055f, 1.f), 0.80f, 0.00f, 0.30f, 0.14f, 120.f });
+    MetalMaterial = MakeMaterial({ FLinearColor(0.075f, 0.080f, 0.086f, 1.f), 0.48f, 0.20f, 0.30f, 0.06f, 300.f });
+    DarkMaterial = MakeMaterial({ FLinearColor(0.060f, 0.066f, 0.074f, 1.f), 0.70f, 0.10f, 0.40f, 0.08f, 500.f });
+    AsphaltMaterial = MakeMaterial({ FLinearColor(0.028f, 0.030f, 0.033f, 1.f), 0.95f, 0.00f, 0.00f, 0.22f, 1200.f });
+    ConcreteLightMaterial = MakeMaterial({ FLinearColor(0.235f, 0.235f, 0.220f, 1.f), 0.82f, 0.00f, 0.25f, 0.08f, 500.f });
+    PaintBlueMaterial = MakeMaterial({ FLinearColor(0.035f, 0.070f, 0.115f, 1.f), 0.55f, 0.00f, 0.30f, 0.06f, 300.f });
+    AccentMaterial = MakeMaterial({ FLinearColor(0.360f, 0.130f, 0.045f, 1.f), 0.60f, 0.00f, 0.35f, 0.08f, 250.f });
+    HazardMaterial = MakeMaterial({ FLinearColor(0.520f, 0.360f, 0.050f, 1.f), 0.62f, 0.00f, 0.25f, 0.10f, 250.f });
+    // Interactable supplies keep strong gameplay colours.
+    AmmoMaterial = MakeMaterial({ FLinearColor(0.20f, 0.25f, 0.10f, 1.f), 0.60f, 0.00f, 0.00f, 0.00f, 300.f });
+    MedicalMaterial = MakeMaterial({ FLinearColor(0.10f, 0.28f, 0.16f, 1.f), 0.60f, 0.00f, 0.00f, 0.00f, 300.f });
+    GrenadeMaterial = MakeMaterial({ FLinearColor(0.20f, 0.18f, 0.07f, 1.f), 0.60f, 0.00f, 0.00f, 0.00f, 300.f });
 
     ConcretePhysicalMaterial = NewObject<UPhysicalMaterial>(this, FName(TEXT("PM_Runtime_Concrete")));
     MetalPhysicalMaterial = NewObject<UPhysicalMaterial>(this, FName(TEXT("PM_Runtime_Metal")));
