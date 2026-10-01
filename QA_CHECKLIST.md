@@ -2,8 +2,34 @@
 
 Objectif : valider toute la mise à jour en une seule compilation/session.
 
-## 0. Build 1 Industrial Visual Rebuild — à tester en premier
-Branche `claude/upbeat-knuth-kuzsu8`. Les sections 1 à 23 restent valables.
+## A. Build 2 — IA qui navigue, fouille et traque (à tester en premier)
+Branche `claude/upbeat-knuth-kuzsu8`. Les sections B et 1 à 23 restent valables.
+
+### Rythme de la vague
+- Rester immobile et silencieux au spawn : `EN APPROCHE 2` apparaît sous l'objectif dans les 15 premières secondes de la vague 1, et les premiers ennemis arrivent.
+- Sans tirer ni bouger, la vague doit finir par venir au joueur : la vague 1 ne doit jamais rester bloquée.
+- Quand il ne reste que 2 ennemis, ils viennent au joueur.
+- La limite `FEU ENNEMI 2/2` est toujours respectée : jamais plus de tireurs simultanés qu'avant.
+
+### Navigation
+- Les ennemis contournent les murs, les conteneurs et les bâtiments au lieu de glisser contre eux.
+- Se cacher dans le bureau de sécurité, porte fermée : un ennemi finit par ouvrir la porte (bruit de porte), et la porte s'ouvre vers l'intérieur, à l'opposé de lui.
+- Même test dans la salle de maintenance.
+- Se placer sur la passerelle Nord : les ennemis viennent dessous et autour, aucun ne reste coincé contre les rampes.
+- Les ennemis qui apparaissent sur les plateformes de la cour Sud en descendent sans rester bloqués au bord.
+- Aucun ennemi ne reste plus de quelques secondes à marcher contre un obstacle.
+
+### Comportements
+- Avant le contact, des ennemis patrouillent lentement autour de leur poste ; leurs pas s'entendent.
+- Se montrer puis disparaître : l'ennemi rejoint la dernière position vue, puis fouille autour en regardant à droite et à gauche.
+- Lancer une grenade près d'un ennemi qui n'a pas encore vu le joueur : il s'enfuit avant l'explosion.
+- Mourir puis `R` : les ennemis ne foncent pas immédiatement sur le point de réapparition (environ 12 s de répit).
+
+### Performance
+- Pas d'à-coup visible quand plusieurs ennemis recalculent leur trajet (vague 4+ avec 10 ennemis).
+- Le log de sortie contient `UltraRealFPS: navigation grid ready` au lancement.
+
+## B. Build 1 — corrections + matériaux
 
 ### Build / matériaux
 - `BUILD_AND_RUN.bat` affiche `Precheck projet: OK` puis compile sans erreur.

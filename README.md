@@ -151,7 +151,7 @@ Pour publier cette version comme première vraie baseline Git, `PUBLISH_TO_GITHU
 
 - Les sons sont synthétiques : ils améliorent beaucoup le feedback mais ne remplacent pas encore des enregistrements multi-couches de vraies armes.
 - Les personnages et l'arme utilisent toujours des primitives Unreal, pas des meshes/animations de production.
-- L'IA n'utilise pas encore NavMesh + Behavior Tree et ne sait pas ouvrir elle-même les portes.
+- L'IA n'utilise pas encore NavMesh + Behavior Tree : elle navigue sur une grille construite au lancement (Build 2). Elle ouvre les portes mais ne les referme pas.
 - Les portes tournent par interpolation et collision simple ; il n'y a pas encore de poignée animée, verrou, destruction ou ouverture progressive au maintien de touche.
 - Aucun test de compilation UE 5.8 ne peut être exécuté dans l'environnement de génération. Les contrôles effectués ici sont statiques ; la compilation sur le PC du joueur reste la validation réelle.
 

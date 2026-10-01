@@ -1,5 +1,28 @@
 # UltraRealFPS — Changelog
 
+## Industrial Visual Rebuild — Build 2 : IA qui navigue, fouille et traque — en test
+
+### Corrections
+- ennemis figés à leur point d'apparition et 8 s après la perte de contact : une vague pouvait ne jamais finir ;
+- ennemis qui marchaient en ligne droite vers un bruit et longeaient les murs sans trouver le passage ;
+- ennemis sans contact récent qui restaient à côté d'une grenade.
+
+### Nouveautés
+- grille de navigation construite au lancement depuis les obstacles du compound (`URFPSNavGrid`), trajets A* ;
+- patrouille, poursuite vers la dernière position connue, fouille, traque du secteur du joueur ;
+- les ennemis ouvrent les portes sur leur trajet ;
+- rythme des vagues : assaillants immédiats, renforts différés, derniers survivants toujours en traque ;
+- HUD : compteur `EN APPROCHE`.
+
+### Workflow
+- `VERIFY_PROJECT.ps1` vérifie la présence de la grille, du suivi de chemin, du rythme des vagues et de l'ouverture des portes.
+
+### Validation
+- branche : `claude/upbeat-knuth-kuzsu8` ;
+- simulation hors moteur : 18 vagues sur 18 terminées avec un joueur caché, contre 0 avant ;
+- compilation et test UE 5.8 à faire sur le PC de test avant merge.
+
+
 ## Industrial Visual Rebuild — Build 1 : corrections + matériaux — en test
 
 ### Corrections

@@ -1,5 +1,59 @@
 # UltraRealFPS — Patch Notes
 
+## Industrial Visual Rebuild — Build 2 : IA qui navigue, fouille et traque
+
+**Branche GitHub :** `claude/upbeat-knuth-kuzsu8` (contient aussi la Build 1 ci-dessous)  
+**Étape roadmap :** priorité 6 de `PROJECT_STATUS.md` (navigation de l'IA), sans NavMesh  
+**Statut :** vérifiée hors moteur, compilation UE 5.8 à valider sur le PC de test.
+
+Récupération : même procédure que la Build 1 (ZIP de la branche copié par-dessus le dossier local, puis `BUILD_AND_RUN.bat`).
+
+### Le problème corrigé
+- Les ennemis restaient plantés à leur point d'apparition tant qu'ils ne voyaient ou n'entendaient pas le joueur.
+- 8 s après avoir perdu le contact, ils se figeaient de nouveau sur place.
+- Un joueur caché ou silencieux bloquait donc la vague indéfiniment. Dans la simulation hors moteur, aucune vague ne se terminait sur 9 cachettes testées.
+- Alerté par un bruit, un ennemi marchait en ligne droite vers lui et pouvait longer un mur pendant des minutes. L'un d'eux a tourné 7 minutes autour du bureau de sécurité sans trouver la porte.
+
+### Navigation
+- Nouvelle grille de navigation (`URFPSNavGrid`) construite au lancement à partir de tous les obstacles du compound : blocs, cylindres et boîtes englobantes des meshes art.
+- La map étant générée à l'exécution sur une carte vide, il n'y a pas de NavMesh. La grille fait 25 cm et tient compte de la largeur des ennemis.
+- Les ennemis calculent un vrai trajet (A*) et contournent les murs, les conteneurs et les pièces.
+- Si le joueur est sur la passerelle Nord ou une plateforme, ils vont au point accessible le plus proche.
+- Les ennemis **ouvrent les portes** fermées sur leur trajet : on les entend arriver, et la porte s'ouvre à l'opposé d'eux.
+- Un ennemi bloqué (porte, autre ennemi, mesh) fait un pas de côté et recalcule son trajet.
+
+### Comportements
+- **Patrouille** : sans contact, les ennemis se déplacent lentement autour de leur poste. Leurs pas sont audibles.
+- **Poursuite** : quand le joueur sort de leur champ de vision, ils rejoignent la dernière position connue par un vrai trajet.
+- **Fouille** : s'ils n'y trouvent personne, ils fouillent 2 ou 3 points autour en regardant autour d'eux, au lieu de se figer.
+- **Traque** : à l'heure fixée par le rythme de la vague, ils se dirigent vers le secteur du joueur. Leur estimation se resserre à chaque mise à jour : un joueur caché est trouvé en quelques dizaines de secondes à trois minutes, pas instantanément.
+- **Grenade** : un ennemi qui n'était pas en contact restait à côté d'une grenade. Il s'enfuit maintenant, puis va voir où elle a explosé.
+
+### Rythme des vagues
+- 2 assaillants à la vague 1, jusqu'à 5 ensuite, partent vers le joueur dans les 8 à 32 premières secondes.
+- Les autres tiennent leur secteur, puis rejoignent la traque après 25 à 118 s selon la vague.
+- Les 2 derniers survivants d'une vague partent toujours en traque : plus de vague qui traîne à cause d'un ennemi oublié dans un coin.
+- HUD : `EN APPROCHE n` s'affiche à côté de `FEU ENNEMI` quand des ennemis traquent le joueur.
+- La limite de tireurs simultanés (`FEU ENNEMI 2/2`) reste en place.
+
+### Vérifications faites
+- Syntaxe C++ des 12 fichiers `.cpp` contrôlée contre des en-têtes UE simulés.
+- Grille : une seule zone connexe, portes du bureau et de la maintenance franchissables. 160 trajets testés (20 points d'apparition × 8 cibles), tous trouvés : 0,4 ms en moyenne, 3,8 ms au pire.
+- Simulation de vagues complètes avec le vrai code du jeu (déplacements, collisions, portes), joueur caché sans tirer dans 9 positions dont le bureau fermé, la maintenance, le CQB, la passerelle et une plateforme :
+  - **18 vagues sur 18 terminées**, contre 0 sur 18 avant ;
+  - durée de 30 s à un peu plus de 3 min selon la cachette ;
+  - les portes du bureau et de la maintenance sont ouvertes par les ennemis ;
+  - mêmes résultats avec un joueur qui tire toutes les 15 s, et avec le kit art.
+- Les tests runtime de la Build 1 (cadence, dégâts accroupi, cadavres, joueur à terre) passent toujours.
+
+### À tester en priorité
+Voir la section A de `QA_CHECKLIST.md`.
+
+### Limites
+- Pas de NavMesh ni de Behavior Tree : la grille ne connaît que le sol. Les ennemis ne montent pas sur la passerelle ni sur les plateformes ; ils peuvent seulement en descendre.
+- Les obstacles sont relevés une fois au lancement. Un objet déplacé pendant la partie n'est pas pris en compte, sauf les portes, gérées à part.
+- Les ennemis ouvrent les portes mais ne les referment pas.
+
 ## Industrial Visual Rebuild — Build 1 : corrections + matériaux
 
 **Branche GitHub :** `claude/upbeat-knuth-kuzsu8` (part de `dev/industrial-visual-rebuild`)  
@@ -64,7 +118,7 @@ Aucune compilation Unreal n'est possible dans l'environnement de génération. L
 - `VERIFY_PROJECT.ps1` et le garde-fou de publication ont été exécutés sous PowerShell.
 
 ### À tester en priorité
-Voir la section 0 de `QA_CHECKLIST.md`.
+Voir la section B de `QA_CHECKLIST.md`.
 
 ### Limites
 - en cas d'erreur de compilation, envoyer `BUILD_ERRORS.txt` ;
