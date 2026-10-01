@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "URFPSEnemy.generated.h"
 
+class USceneComponent;
 class UStaticMeshComponent;
 class UPointLightComponent;
 class USpotLightComponent;
@@ -46,6 +47,10 @@ private:
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* HelmetMesh;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* VestMesh;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* BackpackMesh;
+    UPROPERTY(VisibleAnywhere) USceneComponent* LeftHipPivot;
+    UPROPERTY(VisibleAnywhere) USceneComponent* RightHipPivot;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* LeftLegMesh;
+    UPROPERTY(VisibleAnywhere) UStaticMeshComponent* RightLegMesh;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponMesh;
     UPROPERTY(VisibleAnywhere) UStaticMeshComponent* WeaponBarrelMesh;
     UPROPERTY(VisibleAnywhere) UPointLightComponent* MuzzleFlashLight;
@@ -53,8 +58,14 @@ private:
     UPROPERTY() UMaterialInstanceDynamic* UniformMaterial;
     UPROPERTY() UMaterialInstanceDynamic* GearMaterial;
     UPROPERTY() UMaterialInstanceDynamic* WeaponMaterial;
+    UPROPERTY() UMaterialInstanceDynamic* FaceMaterial;
 
     bool HasLineOfSightToPlayer() const;
+    bool IsPlayerDown(const APawn* Player) const;
+    void DisengageFromDownedPlayer();
+    void UpdateLegSwing(float DeltaSeconds);
+    void BeginDeathFall();
+    void UpdateDeathFall(float DeltaSeconds);
     FVector GetAvoidanceDirection(const FVector& DesiredDirection) const;
     FVector FindCoverBiasedDirection(APawn* Player) const;
     void UpdateCombatMovement(APawn* Player, float DeltaSeconds, bool bHasLOS);
@@ -94,6 +105,15 @@ private:
     float LegInjury = 0.f;
     float AimInjury = 0.f;
     float FootstepDistanceAccumulator = 0.f;
+    float LegSwingPhase = 0.f;
+    float LegSwingAmplitude = 0.f;
+
+    FVector DeathStartLocation = FVector::ZeroVector;
+    FVector DeathRestLocation = FVector::ZeroVector;
+    FRotator DeathStartRotation = FRotator::ZeroRotator;
+    float DeathRestRoll = 0.f;
+    float DeathFallElapsed = 0.f;
+    float DeathFallDuration = 0.42f;
 
     int32 MinBurstShots = 2;
     int32 MaxBurstShots = 3;

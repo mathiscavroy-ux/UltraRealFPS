@@ -2,6 +2,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SceneComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/DamageEvents.h"
@@ -14,6 +15,7 @@
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 #include "URFPSAudio.h"
+#include "URFPSCharacter.h"
 #include "URFPSGameMode.h"
 #include "URFPSProjectile.h"
 
@@ -62,6 +64,27 @@ AURFPSEnemy::AURFPSEnemy()
     BackpackMesh->SetRelativeScale3D(FVector(0.15f, 0.27f, 0.32f));
     BackpackMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+    // Legs. The torso box stops 42 cm above the capsule bottom, so without them every enemy
+    // floated above the ground and shots at knee height passed through nothing. Each leg hangs
+    // from a hip pivot so a simple walk cycle can swing it from the hip instead of its centre.
+    auto CreateLeg = [this](const TCHAR* PivotName, const TCHAR* LegName, float SideOffset, USceneComponent*& OutPivot)
+    {
+        OutPivot = CreateDefaultSubobject<USceneComponent>(FName(PivotName));
+        OutPivot->SetupAttachment(GetCapsuleComponent());
+        OutPivot->SetRelativeLocation(FVector(0.f, SideOffset, -44.f));
+
+        UStaticMeshComponent* Leg = CreateDefaultSubobject<UStaticMeshComponent>(FName(LegName));
+        Leg->SetupAttachment(OutPivot);
+        Leg->SetRelativeLocation(FVector(0.f, 0.f, -22.f));
+        Leg->SetRelativeScale3D(FVector(0.16f, 0.13f, 0.46f));
+        Leg->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        Leg->SetCollisionResponseToAllChannels(ECR_Ignore);
+        Leg->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+        return Leg;
+    };
+    LeftLegMesh = CreateLeg(TEXT("LeftHipPivot"), TEXT("LeftLegMesh"), -9.f, LeftHipPivot);
+    RightLegMesh = CreateLeg(TEXT("RightHipPivot"), TEXT("RightLegMesh"), 9.f, RightHipPivot);
+
     WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EnemyWeapon"));
     WeaponMesh->SetupAttachment(GetCapsuleComponent());
     WeaponMesh->SetRelativeLocation(FVector(31.f, 12.f, 14.f));
@@ -71,7 +94,8 @@ AURFPSEnemy::AURFPSEnemy()
     WeaponBarrelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EnemyWeaponBarrel"));
     WeaponBarrelMesh->SetupAttachment(GetCapsuleComponent());
     WeaponBarrelMesh->SetRelativeLocation(FVector(59.f, 12.f, 14.f));
-    WeaponBarrelMesh->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
+    // Pitch 90 lays the Z-aligned engine cylinder along the firing axis (yaw kept it upright).
+    WeaponBarrelMesh->SetRelativeRotation(FRotator(90.f, 0.f, 0.f));
     WeaponBarrelMesh->SetRelativeScale3D(FVector(0.012f, 0.012f, 0.24f));
     WeaponBarrelMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -111,6 +135,8 @@ AURFPSEnemy::AURFPSEnemy()
         HelmetMesh->SetStaticMesh(CubeMesh.Object);
         VestMesh->SetStaticMesh(CubeMesh.Object);
         BackpackMesh->SetStaticMesh(CubeMesh.Object);
+        LeftLegMesh->SetStaticMesh(CubeMesh.Object);
+        RightLegMesh->SetStaticMesh(CubeMesh.Object);
         WeaponMesh->SetStaticMesh(CubeMesh.Object);
     }
     if (SphereMesh.Succeeded()) HeadMesh->SetStaticMesh(SphereMesh.Object);
@@ -140,11 +166,20 @@ void AURFPSEnemy::BeginPlay()
         UniformMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
         GearMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
         WeaponMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
+        FaceMaterial = UMaterialInstanceDynamic::Create(ParentMaterial, this);
 
         if (UniformMaterial)
         {
             UniformMaterial->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(0.10f, 0.12f, 0.11f, 1.f));
             BodyMesh->SetMaterial(0, UniformMaterial);
+            LeftLegMesh->SetMaterial(0, UniformMaterial);
+            RightLegMesh->SetMaterial(0, UniformMaterial);
+        }
+        if (FaceMaterial)
+        {
+            // Balaclava tone: the head previously kept the bright default shape colour.
+            FaceMaterial->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(0.032f, 0.032f, 0.030f, 1.f));
+            HeadMesh->SetMaterial(0, FaceMaterial);
         }
         if (GearMaterial)
         {
@@ -379,7 +414,11 @@ void AURFPSEnemy::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-    if (bDead) return;
+    if (bDead)
+    {
+        UpdateDeathFall(DeltaSeconds);
+        return;
+    }
 
     const float LegSpeedScale = FMath::Lerp(1.f, 0.62f, FMath::Clamp(LegInjury, 0.f, 1.f));
     const float CriticalHealthScale = Health < MaxHealth * 0.28f ? 0.90f : 1.f;
@@ -398,9 +437,18 @@ void AURFPSEnemy::Tick(float DeltaSeconds)
     WeaponKick = FMath::FInterpTo(WeaponKick, 0.f, DeltaSeconds, 16.f);
     if (WeaponMesh) WeaponMesh->SetRelativeRotation(FRotator(-5.5f * WeaponKick, 0.f, 0.f));
     UpdateFootsteps(DeltaSeconds);
+    UpdateLegSwing(DeltaSeconds);
 
     APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
     if (!Player) return;
+
+    // A downed player is no longer a target. Previously the squad kept converging on the body
+    // and emptying magazines into it until the player pressed R to respawn.
+    if (IsPlayerDown(Player))
+    {
+        DisengageFromDownedPlayer();
+        return;
+    }
 
     const float Distance = FVector::Dist2D(GetActorLocation(), Player->GetActorLocation());
     bool bHasLOS = false;
@@ -441,6 +489,70 @@ void AURFPSEnemy::Tick(float DeltaSeconds)
         UpdateCombatMovement(Player, DeltaSeconds, bHasLOS);
         TryFire(DeltaSeconds, Player, bHasLOS);
     }
+}
+
+bool AURFPSEnemy::IsPlayerDown(const APawn* Player) const
+{
+    const AURFPSCharacter* PlayerCharacter = Cast<AURFPSCharacter>(Player);
+    return PlayerCharacter && PlayerCharacter->IsDead();
+}
+
+void AURFPSEnemy::DisengageFromDownedPlayer()
+{
+    ReleaseFireSlot();
+    BurstShotsRemaining = 0;
+    ReactionTimer = 0.f;
+    // Forget the contact: after the respawn the squad must see or hear the player again and
+    // goes through its normal reaction delay instead of firing instantly at the spawn point.
+    bAlerted = false;
+    TimeSinceSeen = SearchLingerTime;
+}
+
+void AURFPSEnemy::UpdateLegSwing(float DeltaSeconds)
+{
+    if (!LeftHipPivot || !RightHipPivot) return;
+
+    // Stride cycle driven by the distance actually covered (one full cycle per two steps).
+    const float PlanarSpeed = GetVelocity().Size2D();
+    const bool bGrounded = GetCharacterMovement() && GetCharacterMovement()->IsMovingOnGround();
+    const float TargetAmplitude = bGrounded ? FMath::Clamp(PlanarSpeed / 300.f, 0.f, 1.f) * 24.f : 0.f;
+    LegSwingAmplitude = FMath::FInterpTo(LegSwingAmplitude, TargetAmplitude, DeltaSeconds, 8.f);
+    LegSwingPhase = FMath::Fmod(LegSwingPhase + DeltaSeconds * PI * PlanarSpeed / 170.f, 2.f * PI);
+
+    const float Swing = FMath::Sin(LegSwingPhase) * LegSwingAmplitude;
+    LeftHipPivot->SetRelativeRotation(FRotator(Swing, 0.f, 0.f));
+    RightHipPivot->SetRelativeRotation(FRotator(-Swing, 0.f, 0.f));
+}
+
+void AURFPSEnemy::BeginDeathFall()
+{
+    // The corpse used to be rolled 82 degrees around the capsule centre and stayed ~65 cm above
+    // the ground. It now collapses onto the floor the capsule was standing on.
+    DeathStartLocation = GetActorLocation();
+    DeathStartRotation = GetActorRotation();
+    DeathRestRoll = FMath::RandBool() ? 82.f : -82.f;
+    DeathFallElapsed = 0.f;
+
+    const float HalfHeight = GetCapsuleComponent() ? GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.f;
+    // Lying on its side the widest gear (vest) extends ~20 cm from the actor origin.
+    DeathRestLocation = DeathStartLocation - FVector(0.f, 0.f, HalfHeight - 21.f);
+
+    if (LeftHipPivot) LeftHipPivot->SetRelativeRotation(FRotator(-8.f, 0.f, 0.f));
+    if (RightHipPivot) RightHipPivot->SetRelativeRotation(FRotator(12.f, 0.f, 0.f));
+}
+
+void AURFPSEnemy::UpdateDeathFall(float DeltaSeconds)
+{
+    if (DeathFallElapsed >= DeathFallDuration) return;
+
+    DeathFallElapsed = FMath::Min(DeathFallDuration, DeathFallElapsed + DeltaSeconds);
+    const float Alpha = FMath::Clamp(DeathFallElapsed / FMath::Max(DeathFallDuration, KINDA_SMALL_NUMBER), 0.f, 1.f);
+    const float Eased = Alpha * Alpha; // accelerates like a body giving way under gravity
+
+    FRotator Rotation = DeathStartRotation;
+    Rotation.Roll = DeathStartRotation.Roll + (DeathRestRoll - DeathStartRotation.Roll) * Eased;
+    const FVector Location = DeathStartLocation + (DeathRestLocation - DeathStartLocation) * Eased;
+    SetActorLocationAndRotation(Location, Rotation, false, nullptr, ETeleportType::TeleportPhysics);
 }
 
 bool AURFPSEnemy::HasLineOfSightToPlayer() const
@@ -915,11 +1027,16 @@ float AURFPSEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
         ReleaseFireSlot();
         GetCharacterMovement()->DisableMovement();
         GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-        BodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-        HeadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        // Every hit volume goes: the vest and helmet used to keep blocking Visibility, so a
+        // corpse soaked up rounds, blocked sight lines and shielded others from grenades for 6 s.
+        UStaticMeshComponent* const HitVolumes[] = { BodyMesh, HeadMesh, HelmetMesh, VestMesh, LeftLegMesh, RightLegMesh };
+        for (UStaticMeshComponent* HitVolume : HitVolumes)
+        {
+            if (HitVolume) HitVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        }
         if (MuzzleFlashLight) MuzzleFlashLight->SetVisibility(false);
         if (MuzzleFlashCone) MuzzleFlashCone->SetVisibility(false);
-        SetActorRotation(GetActorRotation() + FRotator(0.f, 0.f, FMath::RandBool() ? 82.f : -82.f));
+        BeginDeathFall();
         SetLifeSpan(6.f);
 
         if (AURFPSGameMode* GameMode = Cast<AURFPSGameMode>(UGameplayStatics::GetGameMode(this)))
