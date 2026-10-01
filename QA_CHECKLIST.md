@@ -2,6 +2,47 @@
 
 Objectif : valider toute la mise à jour en une seule compilation/session.
 
+## 0. Build 1 Industrial Visual Rebuild — à tester en premier
+Branche `claude/upbeat-knuth-kuzsu8`. Les sections 1 à 23 restent valables.
+
+### Build / matériaux
+- `BUILD_AND_RUN.bat` affiche `Precheck projet: OK` puis compile sans erreur.
+- Après la compilation : bloc `GENERATION DES MATERIAUX ENVIRONNEMENT` puis `[OK] Master material cree`.
+- `Content/UltraRealFPS/Art/Materials/Environment/Industrial/M_Master_IndustrialSurface.uasset` et `Saved/EnvironmentMaterials.ok` existent.
+- Deuxième lancement : `[MAT] Materiaux environnement deja generes.`, pas de nouvelle génération.
+- En jeu : variation de ton douce sur les grands murs, pied de mur un peu plus sale, aucun mur noir uni, sol béton et asphalte bien distincts.
+- Aucun motif répétitif en damier sur les murs ni sur le sol.
+- Si la génération échoue, le jeu doit se lancer quand même avec l'ancienne palette : noter la ligne `[ERREUR]` affichée.
+
+### Arme / joueur
+- SEMI : cliquer le plus vite possible ne tire pas plus vite qu'en AUTO.
+- BURST : rafales de 3 coups bien espacées, même en cliquant sans arrêt.
+- Hanche : le canon est horizontal, dans l'axe de l'arme.
+- ADS : viseur reflex ouvert, point rouge au centre, la cible n'est plus masquée.
+- Accroupi : un ennemi peut toucher la tête (dégâts plus forts qu'au torse).
+- Mourir accroupi puis `R` : le joueur réapparaît debout et immobile.
+
+### IA / vagues
+- HUD : `HOSTILES 07` à la vague 1, puis 8, 9 et 10 aux vagues suivantes.
+- Aucun ennemi n'apparaît dans un mur ou dans une pièce fermée.
+- Cour Sud : un ennemi peut apparaître sur une plateforme de tir et en descendre par la rampe.
+- Les ennemis ont des jambes qui bougent en marchant ; aucun ne flotte.
+- Tuer un ennemi : le corps tombe au sol sur le côté ; une balle tirée à travers l'emplacement du cadavre passe (casque et gilet ne bloquent plus).
+- Mourir : les ennemis arrêtent de tirer sur le corps et reprennent après le respawn.
+
+### Map
+- Longer les quatre coins du mur d'enceinte : impossible de sortir de la map.
+- Portes : `E` ouvre la porte à l'opposé du joueur, depuis l'intérieur comme depuis l'extérieur.
+- Bureau de sécurité et maintenance : murs jointifs, toit, porte qui remplit l'ouverture, aucun passage à côté de la porte fermée.
+- Passerelle Nord : supports visibles, les deux rampes mènent sur la passerelle.
+- Cour Sud : plateformes pleines, rampes praticables jusqu'en haut.
+- Pipe-rack de la cour : tuyaux horizontaux, plus de poteaux de 17 m.
+- Lampadaires, portique, tour, entrepôt et CQB : rien ne flotte au-dessus du sol ni au-dessus des murs.
+- Avec le kit art importé : pas de réservoir ni de conteneur en double au même endroit.
+
+### Publication
+- `PUBLISH_TO_GITHUB.bat` lancé depuis un ancien dossier doit refuser et lister les fichiers manquants.
+
 ## 1. Build / démarrage
 - `BUILD_AND_RUN.bat` affiche `Precheck projet: OK`.
 - UnrealBuildTool termine sans `error`.

@@ -43,17 +43,24 @@
 5. Le multijoueur n'est pas prévu dans les systèmes actuels ; ne pas l'ajouter avant stabilisation du solo.
 
 ## Développement actuel
-- branche : `dev/art-foundation-industrial-kit` ;
-- étape roadmap : **ÉTAPE 2 — sortie du blockout / vrais meshes** ;
-- 11 modèles GLB internes sont maintenant reliés à un import automatique UE 5.8 ;
-- le GameMode utilise ces meshes quand ils existent et garde le blockout en fallback ;
-- validation requise : compilation, import Interchange, collisions et performance.
+- branche : `claude/upbeat-knuth-kuzsu8` (Industrial Visual Rebuild, Build 1) ;
+- base : `dev/industrial-visual-rebuild`, elle-même issue de `dev/art-foundation-industrial-kit` ;
+- étape roadmap : corrections de gameplay et de géométrie, puis **étape 3 de `VISUAL_REBUILD_PLAN.md` — master material + instances** ;
+- le GameMode utilise `M_Master_IndustrialSurface` quand il existe et garde le matériau de base en fallback ;
+- les 11 modèles GLB du kit art restent importés automatiquement et utilisés quand ils existent ;
+- validation requise : compilation UE 5.8, génération du master material, section 0 de `QA_CHECKLIST.md`.
+
+## Points ouverts
+- `ArtSource/Industrial` (GLB) n'est pas sur GitHub : publier avec Git LFS installé depuis un dossier à jour ;
+- la boussole du HUD affiche N face à l'entrepôt Est. Les noms de zones (Nord = +Y, Est = +X) forment un repère en miroir : aucune boussole ne peut les suivre sans échanger Nord et Sud dans les noms ;
+- l'entrepôt et le bloc CQB restent ouverts : les fermer demandera une IA capable de passer les portes ;
+- le placement des meshes art n'a pas encore été vérifié depuis la correction de la géométrie.
 
 ## Documentation build
 - `PATCH_NOTES.md` contient les patch notes de la build de test courante.
 
 ## Priorités recommandées après cette update
-1. Valider la branche `dev/art-foundation-industrial-kit` sous UE 5.8 puis merger si stable.
+1. Valider la branche `claude/upbeat-knuth-kuzsu8` sous UE 5.8 puis merger si stable.
 2. Construire le pipeline de vrais assets audio/armes (Git LFS + imports reproductibles).
 3. Remplacer progressivement l'audio procédural par des enregistrements/MetaSounds sans changer les appels gameplay.
 4. Remplacer l'arme placeholder par un vrai viewmodel squelettique + animations.

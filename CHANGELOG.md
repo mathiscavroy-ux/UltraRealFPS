@@ -1,5 +1,42 @@
 # UltraRealFPS — Changelog
 
+## Industrial Visual Rebuild — Build 1 : corrections + matériaux — en test
+
+### Corrections
+- vagues limitées à 4 ennemis par un pas de 5 sur 20 points de spawn : 7 à 10 ennemis comme prévu ;
+- coins du mur d'enceinte ouverts sur l'extérieur de la map ;
+- portes qui s'ouvraient vers le joueur ;
+- cadence de tir non bornée en SEMI/BURST et en AUTO par tapotement ;
+- joueur accroupi impossible à toucher à la tête ;
+- respawn sans reset de l'accroupissement ni de l'élan ;
+- ennemis qui tiraient sur le joueur mort jusqu'au respawn ;
+- cadavres suspendus en l'air, qui arrêtaient les balles et les grenades ;
+- ennemis sans jambes, torse flottant ;
+- canons et tuyaux "horizontaux" restés verticaux ;
+- bureau de sécurité et maintenance ouverts aux coins, sans toit, porte plus étroite que l'ouverture ;
+- passerelle Nord et étagères Sud flottantes, rampes de travers ;
+- toits, pannes, bandes de façade, lampadaires, portique, tour et pipe-rack décollés ou enfoncés ;
+- doublons blocs / meshes art au même endroit ;
+- sons de balles et d'impacts rattachés à des acteurs détruits dans la même frame ;
+- points de spawn dans les murs ou sous les étagères.
+
+### Nouveautés
+- master material environnement généré par script (`BUILD_MATERIALS.bat`) et une instance par style de surface ;
+- palette `ART_DIRECTION.md` (plus de structures quasi noires), avec repli automatique sur l'ancien matériau ;
+- viseur reflex ouvert en ADS ;
+- jambes animées et chute au sol des ennemis ;
+- plateformes de tir dans la cour Sud.
+
+### Workflow
+- `VERIFY_PROJECT.ps1` détecte le retour des bugs corrigés ;
+- `PUBLISH_TO_GITHUB.bat` publie sur la branche de la build et refuse un dossier local plus ancien ;
+- fins de ligne CRLF pour les `.bat`.
+
+### Validation
+- branche : `claude/upbeat-knuth-kuzsu8` ;
+- vérifiée hors moteur ; compilation et test UE 5.8 à faire sur le PC de test avant merge.
+
+
 ## Art Foundation Industrial Kit — en test
 
 ### Sortie du blockout

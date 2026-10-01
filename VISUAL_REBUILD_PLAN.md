@@ -20,6 +20,10 @@ Replace the current blockout-first look with a coherent tactical industrial comp
 7. Repetition optimization with ISM/HISM.
 8. PCG only for secondary dressing after art direction is stable.
 
+Progress (Build 1, branch `claude/upbeat-knuth-kuzsu8`):
+- step 1: geometry errors of the current layout fixed (closed rooms, grounded and supported structures, perimeter corners);
+- step 3: master material implemented without textures, one instance per blockout style (see `MATERIAL_PIPELINE.md`).
+
 ## Zone layout
 
 ### Zone A — Spawn / staging
