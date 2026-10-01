@@ -25,6 +25,8 @@ $AudioSource = Require-File 'Source\UltraRealFPS\URFPSAudio.cpp'
 $DoorHeader = Require-File 'Source\UltraRealFPS\URFPSDoor.h'
 $DoorSource = Require-File 'Source\UltraRealFPS\URFPSDoor.cpp'
 $ErrorCollector = Require-File 'COLLECT_BUILD_ERRORS.ps1'
+$MaterialScript = Require-File 'Tools\build_environment_materials.py'
+$MaterialBatch = Require-File 'BUILD_MATERIALS.bat'
 
 if (Test-Path -LiteralPath $BuildCs) {
     $Text = Get-Content -LiteralPath $BuildCs -Raw
@@ -74,7 +76,10 @@ if (Test-Path -LiteralPath $SourceRoot) {
         @{ Pattern = 'Engine/SkyAtmosphere\.h'; Message = 'Ancien include invalide Engine/SkyAtmosphere.h detecte' },
         @{ Pattern = 'CrouchedHalfHeight\s*='; Message = 'Acces direct deprecie a CrouchedHalfHeight detecte' },
         @{ Pattern = 'BuildSettingsVersion\.V5'; Message = 'Ancien BuildSettingsVersion.V5 detecte' },
-        @{ Pattern = 'ImpactPoint\.IsNearlyZero\(\)\s*\?[^;\n]*:[^;\n]*ImpactPoint'; Message = 'Operateur ternaire FVector/FVector_NetQuantize detecte autour de ImpactPoint' }
+        @{ Pattern = 'ImpactPoint\.IsNearlyZero\(\)\s*\?[^;\n]*:[^;\n]*ImpactPoint'; Message = 'Operateur ternaire FVector/FVector_NetQuantize detecte autour de ImpactPoint' },
+        @{ Pattern = 'Offset \* 5\) %'; Message = 'Pas de 5 sur 20 points de spawn: vagues limitees a 4 ennemis' },
+        @{ Pattern = 'FVector\(1\.f, 55\.f, 4\.5f\)|FVector\(55\.f, 1\.f, 4\.5f\)'; Message = 'Mur d''enceinte trop court: coins ouverts hors de la map' },
+        @{ Pattern = 'OpenDirection = Side >= 0\.f \? -1\.f'; Message = 'Porte qui s''ouvre vers le joueur' }
     )
 
     foreach ($Rule in $Forbidden) {
@@ -87,7 +92,13 @@ if (Test-Path -LiteralPath $SourceRoot) {
         @{ Pattern = 'URFPSAudio::PlayGunshot'; Message = 'Couche audio gunshot absente' },
         @{ Pattern = 'AURFPSDoor::Interact'; Message = 'Interaction de porte absente' },
         @{ Pattern = 'UpdateFootsteps'; Message = 'Systeme de pas absent' },
-        @{ Pattern = 'AlertFromNoise'; Message = 'Perception acoustique IA absente' }
+        @{ Pattern = 'AlertFromNoise'; Message = 'Perception acoustique IA absente' },
+        @{ Pattern = 'GetCycleCooldownRemaining'; Message = 'Cadence de tir non bornee (SEMI/BURST)' },
+        @{ Pattern = 'DisengageFromDownedPlayer'; Message = 'IA qui continue de tirer sur le joueur mort' },
+        @{ Pattern = 'BeginDeathFall'; Message = 'Cadavres ennemis flottants' },
+        @{ Pattern = 'SnapBaseToGround'; Message = 'Recalage au sol des blocs absent' },
+        @{ Pattern = 'GreatestCommonDivisor'; Message = 'Parcours des points de spawn non premier avec leur nombre' },
+        @{ Pattern = 'EnvironmentMasterMaterial'; Message = 'Pipeline master material absent du GameMode' }
     )
     foreach ($Rule in $RequiredSourcePatterns) {
         if ($AllSource -notmatch $Rule.Pattern) {
